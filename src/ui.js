@@ -23,7 +23,50 @@ export function makeButton(label, action, y) {
     };
 }
 
+export function makeCard(label, desc, key, x, y, w, h, action) {
+    return {
+        x: x,
+        y: y,
+        w: w,
+        h: h,
+        label: label,
+        desc: desc,
+        key: key,
+        kind: "card",
+        action: action
+    };
+}
+
 function drawButton(button) {
+    if (button.kind === "card") {
+        ctx.fillStyle = "#1c1c22";
+        ctx.fillRect(button.x, button.y, button.w, button.h);
+
+        ctx.strokeStyle = "#ffd75a";
+        ctx.strokeRect(button.x, button.y, button.w, button.h);
+
+        ctx.fillStyle = "#3498db";
+        ctx.fillRect(button.x + 10, button.y + 10, 22, 22);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 13px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(String(button.key), button.x + 21, button.y + 25);
+
+        ctx.fillStyle = "#ffd75a";
+        ctx.font = "bold 15px Georgia, serif";
+        ctx.fillText(button.label, button.x + button.w / 2, button.y + 34);
+
+        ctx.fillStyle = "#cccccc";
+        ctx.font = "12px Arial";
+        ctx.fillText(button.desc, button.x + button.w / 2, button.y + 58);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.font = "11px Arial";
+        ctx.fillText("click or press [" + button.key + "]", button.x + button.w / 2, button.y + button.h - 14);
+        return;
+    }
+
     ctx.fillStyle = "#3498db";
     ctx.fillRect(button.x, button.y, button.w, button.h);
 
@@ -164,6 +207,21 @@ export function drawOverlays() {
         for (const button of uiButtons) {
             drawButton(button);
         }
+
+        return;
+    }
+
+    if (gameState === "levelup") {
+
+        ctx.fillStyle = "#ffd75a";
+        ctx.font = "bold 42px Georgia, serif";
+        ctx.fillText("LEVEL UP", VIEW_WIDTH / 2, 115);
+
+        ctx.fillStyle = "#dddddd";
+        ctx.font = "16px Arial";
+        ctx.fillText("Choose an upgrade", VIEW_WIDTH / 2, 145);
+
+        for (const button of uiButtons) { drawButton(button); }
 
         return;
     }

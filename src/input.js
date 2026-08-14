@@ -6,7 +6,8 @@ import { gameState } from "./state.js";
 import {
     triggerStartGame,
     triggerRestartGame,
-    triggerTogglePause
+    triggerTogglePause,
+    triggerLevelUpChoice
 } from "./events.js";
 import { DASH_DOUBLE_TAP_WINDOW } from "./config.js";
 
@@ -60,6 +61,19 @@ document.addEventListener("keydown", function (event) {
 
     if (gameState === "title" && (key === "enter" || event.code === "Space")) {
         triggerStartGame();
+        return;
+    }
+
+    if (gameState === "levelup") {
+        if (key === "1") {
+            triggerLevelUpChoice(0);
+        } else if (key === "2") {
+            triggerLevelUpChoice(1);
+        } else if (key === "3") {
+            triggerLevelUpChoice(2);
+        } else if (event.code === "Space" || key === "enter") {
+            triggerLevelUpChoice(0);
+        }
         return;
     }
 

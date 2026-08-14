@@ -8,7 +8,9 @@ import {
     ATTACK_BASE_RANGE,
     LEVEL_XP_BASE,
     LEVEL_HEAL,
-    WAVE_BREAK_TIME
+    WAVE_BREAK_TIME,
+    DASH_COOLDOWN,
+    VIEW_WIDTH
 } from "./config.js";
 
 import {
@@ -32,7 +34,8 @@ import { clearBanners, showBanner } from "./banners.js";
 import { clearDashRequest } from "./input.js";
 import { buildLevel, LEVELS, currentLevel, levelIndex } from "./levels.js";
 import { player, enemies, loot, resetPlayer } from "./entities.js";
-import { setButtons, makeButton } from "./ui.js";
+import { setButtons, makeButton, makeCard } from "./ui.js";
+import { rollUpgradeOptions } from "./logic/upgrades.js";
 
 export function resetRun() {
     buildLevel(0);
@@ -44,6 +47,13 @@ export function resetRun() {
     player.level = 1;
     player.xp = 0;
     player.xpNext = LEVEL_XP_BASE;
+    player.attackSpeedMult = 1;
+    player.speedMult = 1;
+    player.dashCooldownTime = DASH_COOLDOWN;
+    player.critChance = 0;
+    player.lifesteal = 0;
+    player.cleaveMult = 1;
+    player.pendingLevels = 0;
     resetPlayer();
 
     enemies.length = 0;
@@ -140,4 +150,110 @@ export function advanceLevel() {
 
     addScore(500);
     showBanner("LEVEL " + (levelIndex + 1), currentLevel.name + " · +500", 3);
+}
+
+// ======================
+// LEVEL-UP CHOICES
+// ======================
+
+let upgradeOptions = [];
+
+function makeUpgradeCards() {
+    const y = 220;
+    const w = 180;
+    const h = 130;
+    const gap = 25;
+    const total = upgradeOptions.length * w + (upgradeOptions.length - 1) * gap;
+    const startX = (VIEW_WIDTH - total) / 2;
+
+    return upgradeOptions.map(function (option, index) {
+        return makeCard(
+            option.name,
+            option.desc,
+            index + 1,
+            startX + index * (w + gap),
+            y,
+            w,
+            h,
+            function () {
+                chooseUpgrade(index);
+            }
+        );
+    });
+}
+
+export function openLevelUpChoice() {
+    if (player.pendingLevels <= 0) {
+        return;
+    }
+
+    player.pendingLevels--;
+    upgradeOptions = rollUpgradeOptions(3, Math.random);
+
+    setGameState("levelup");
+    setButtons(makeUpgradeCards());
+    AudioFX.levelUp();
+}
+
+export function chooseUpgrade(index) {
+    if (gameState !== "levelup") {
+        return;
+    }
+
+    const option = upgradeOptions[index];
+
+    if (!option) {
+        return;
+    }
+
+    applyUpgrade(option.id);
+    AudioFX.pickup();
+
+    if (player.pendingLevels > 0) {
+        openLevelUpChoice();
+    } else {
+        setGameState("playing");
+        setButtons([]);
+    }
+}
+
+function applyUpgrade(id) {
+    switch (id) {
+        case "damage":
+            player.damage += 6;
+            break;
+
+        case "range":
+            player.range += 10;
+            break;
+
+        case "speed":
+            player.attackSpeedMult *= 0.88;
+            break;
+
+        case "vitality":
+            player.maxHealth += 20;
+            player.health = Math.min(player.maxHealth, player.health + 20);
+            break;
+
+        case "boots":
+            player.speedMult += 0.1;
+            break;
+
+        case "reflex":
+            player.dashCooldownTime *= 0.85;
+            break;
+
+        case "crit":
+            player.critChance += 0.1;
+            break;
+
+        case "lifesteal":
+            player.lifesteal += 0.05;
+            break;
+
+        case "cleave":
+            player.cleaveMult += 0.5;
+            break;
+    }
 }

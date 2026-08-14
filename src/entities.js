@@ -14,7 +14,6 @@ import {
     POTION_HEAL,
     LEVEL_XP_BASE,
     LEVEL_XP_GROWTH,
-    LEVEL_HP_BONUS,
     LEVEL_HEAL,
     DASH_SPEED,
     DASH_DURATION,
@@ -24,7 +23,7 @@ import {
 } from "./config.js";
 
 import { gameState, stats, addScore } from "./state.js";
-import { triggerPlayerDeath } from "./events.js";
+import { triggerPlayerDeath, triggerLevelUp } from "./events.js";
 import { keys, attacking, consumeDashRequest } from "./input.js";
 import { AudioFX } from "./audio.js";
 import {
@@ -35,7 +34,6 @@ import {
     addHitStop
 } from "./fx.js";
 import { currentLevel, isColliding, aabb } from "./levels.js";
-import { showBanner } from "./banners.js";
 import { decideEnemyState } from "./logic/ai.js";
 import { rollLoot } from "./logic/loot.js";
 import { dashDirection } from "./logic/dash.js";
@@ -60,8 +58,15 @@ export const player = {
     invuln: 0,
     dashTimer: 0,
     dashCooldown: 0,
+    dashCooldownTime: DASH_COOLDOWN,
     dashDX: 1,
-    dashDY: 0
+    dashDY: 0,
+    attackSpeedMult: 1,
+    speedMult: 1,
+    critChance: 0,
+    lifesteal: 0,
+    cleaveMult: 1,
+    pendingLevels: 0
 };
 
 const ENEMY_TYPES = {
@@ -210,7 +215,7 @@ function tryStartDash() {
     player.dashDX = dir.dx;
     player.dashDY = dir.dy;
     player.dashTimer = DASH_DURATION;
-    player.dashCooldown = DASH_COOLDOWN;
+    player.dashCooldown = player.dashCooldownTime;
     player.invuln = Math.max(player.invuln, DASH_IFRAMES);
 
     addShake(2);
@@ -274,8 +279,8 @@ export function updatePlayer(dt) {
 
     if (dx !== 0 || dy !== 0) {
         const length = Math.hypot(dx, dy);
-        const moveX = (dx / length) * PLAYER_SPEED * dt;
-        const moveY = (dy / length) * PLAYER_SPEED * dt;
+        const moveX = (dx / length) * PLAYER_SPEED * player.speedMult * dt;
+        const moveY = (dy / length) * PLAYER_SPEED * player.speedMult * dt;
 
         if (!isColliding(player.x + moveX, player.y, player.width, player.height)) {
             player.x += moveX;
@@ -357,7 +362,10 @@ function getOverlap(e, p) {
 // ======================
 
 function damageEnemy(e) {
-    e.health -= player.damage;
+    const crit = Math.random() < player.critChance;
+    const damage = Math.round(player.damage * (crit ? 2 : 1));
+
+    e.health -= damage;
     e.flash = 0.12;
 
     const knockX = player.x + player.width / 2 < e.x + e.width / 2 ? 1 : -1;
@@ -365,21 +373,25 @@ function damageEnemy(e) {
     e.kx = knockX * 300 * e.knockResist;
     e.ky = knockY * 120 * e.knockResist;
 
-    addShake(4);
+    addShake(crit ? 7 : 4);
     AudioFX.hit();
 
     if (e.type === "boss") {
         addHitStop(0.05);
     }
 
+    if (player.lifesteal > 0) {
+        player.health = Math.min(player.maxHealth, player.health + damage * player.lifesteal);
+    }
+
     spawnParticles(
         e.x + e.width / 2,
         e.y + e.height / 2,
-        8,
-        e.colors,
-        160
+        crit ? 16 : 8,
+        crit ? ["#ffd75a", "#ff9d22", "#fff3c4"] : e.colors,
+        crit ? 220 : 160
     );
-    addNumber(e.x + e.width / 2, e.y - 14, String(player.damage), "#ffe08a");
+    addNumber(e.x + e.width / 2, e.y - 14, String(damage), crit ? "#ffd75a" : "#ffe08a");
 
     if (e.health <= 0) {
         killEnemy(e);
@@ -427,7 +439,7 @@ export function playerAttack(dt) {
     }
 
     player.attackTimer = ATTACK_DURATION;
-    player.attackCooldown = ATTACK_COOLDOWN;
+    player.attackCooldown = ATTACK_COOLDOWN * player.attackSpeedMult;
 
     addShake(1.5);
     AudioFX.swing();
@@ -442,14 +454,14 @@ export function playerAttack(dt) {
     if (player.direction === "right") {
         box.x = player.x + player.width;
         box.y = player.y + 5;
-        box.w = player.range;
+        box.w = player.range * player.cleaveMult;
         box.h = player.height - 10;
     }
 
     if (player.direction === "left") {
-        box.x = player.x - player.range;
+        box.x = player.x - player.range * player.cleaveMult;
         box.y = player.y + 5;
-        box.w = player.range;
+        box.w = player.range * player.cleaveMult;
         box.h = player.height - 10;
     }
 
@@ -457,14 +469,14 @@ export function playerAttack(dt) {
         box.x = player.x + 5;
         box.y = player.y + player.height;
         box.w = player.width - 10;
-        box.h = player.range;
+        box.h = player.range * player.cleaveMult;
     }
 
     if (player.direction === "up") {
         box.x = player.x + 5;
-        box.y = player.y - player.range;
+        box.y = player.y - player.range * player.cleaveMult;
         box.w = player.width - 10;
-        box.h = player.range;
+        box.h = player.range * player.cleaveMult;
     }
 
     for (const e of enemies) {
@@ -645,11 +657,12 @@ function gainXP(amount) {
         player.xp -= player.xpNext;
         player.level++;
         player.xpNext = LEVEL_XP_BASE + player.level * LEVEL_XP_GROWTH;
-        player.maxHealth += LEVEL_HP_BONUS;
+        player.pendingLevels++;
         player.health = Math.min(player.maxHealth, player.health + LEVEL_HEAL);
+    }
 
-        AudioFX.levelUp();
-        showBanner("LEVEL UP!", "Max HP +" + LEVEL_HP_BONUS);
+    if (player.pendingLevels > 0 && gameState === "playing") {
+        triggerLevelUp();
     }
 }
 

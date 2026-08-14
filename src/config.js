@@ -41,7 +41,6 @@ export const POTION_HEAL = 30;
 
 export const LEVEL_XP_BASE = 40;
 export const LEVEL_XP_GROWTH = 25;
-export const LEVEL_HP_BONUS = 10;
 export const LEVEL_HEAL = 25;
 
 export const WAVE_BREAK_TIME = 3;

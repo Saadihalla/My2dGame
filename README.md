@@ -33,7 +33,7 @@ npm run lint       # run eslint
 
 ## Progression
 
-- **XP & levels** — each kill grants XP; leveling up raises max HP and heals you
+- **XP & levels** — each kill grants XP; leveling up pauses the action and offers a **pick-3 choice** of stackable upgrades: damage, crit (2x), lifesteal, cleave, attack speed, range, move speed, max HP, dash recharge
 - **Health potions** drop from kills (red flask)
 - **Sword upgrades** drop occasionally (gold sword): +4 damage, +5 range
 - **Dash** — a quick burst in any direction (or your facing when idle) on a short cooldown; grants invulnerability frames and shoves enemies aside

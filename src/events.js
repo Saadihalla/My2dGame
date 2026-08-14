@@ -33,3 +33,15 @@ export function triggerPlayerDeath() {
         handlers.playerDeath();
     }
 }
+
+export function triggerLevelUp() {
+    if (handlers) {
+        handlers.levelUp();
+    }
+}
+
+export function triggerLevelUpChoice(index) {
+    if (handlers) {
+        handlers.levelUpChoice(index);
+    }
+}

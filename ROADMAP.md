@@ -79,10 +79,14 @@ Converted the architecture so everything after is easier, safer, and testable.
 
 The biggest replayability win; nothing here needs rework of the foundation.
 
-1. **Level-up choices** (pick-3 on level up, Vampire-Survivors style)
-   - Candidates: +damage, +speed, multi-swing, lifesteal, attack size, crit
-   - Replaces the current flat "max HP + heal" level-up
-2. **New enemy archetypes**
+1. **Level-up choices** (pick-3 on level up, Vampire-Survivors style) ✅ DONE
+   - 9 stackable upgrades: Brawler (+damage), Long Reach (+range), Swift
+     Blade (attack speed), Vitality (+max HP), Striders (+move speed),
+     Quick Reflexes (dash recharge), Keen Edge (crit), Bloodthirst
+     (lifesteal), Cleave (wider sweeps)
+   - Leveling pauses the action; pick via click or 1/2/3; multiple levels
+     from one kill queue up sequentially
+2. **New enemy archetypes** ⏳ NEXT
    - Ranged caster (telegraphed projectile)
    - Exploder (telegraphed suicide rush)
    - Shieldbearer (only takes hits from the front / unshielded side)

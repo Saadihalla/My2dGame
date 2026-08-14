@@ -74,7 +74,9 @@ import {
     onPlayerDeath,
     goTitle,
     advanceLevel,
-    victory
+    victory,
+    openLevelUpChoice,
+    chooseUpgrade
 } from "./flow.js";
 import { waveEnemyList } from "./logic/waves.js";
 import { findSpawnPoints } from "./logic/spawn.js";
@@ -83,7 +85,9 @@ registerFlow({
     startGame: startGame,
     restartGame: restartGame,
     togglePause: togglePause,
-    playerDeath: onPlayerDeath
+    playerDeath: onPlayerDeath,
+    levelUp: openLevelUpChoice,
+    levelUpChoice: chooseUpgrade
 });
 
 // ======================
