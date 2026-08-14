@@ -2,7 +2,18 @@
 // MUTABLE GAME STATE (shared across modules)
 // ======================
 
+import { createCamera } from "./logic/camera.js";
+
 export let gameState = "title"; // "title" | "playing" | "paused" | "gameover" | "victory"
+export let camera = createCamera();
+
+export function resetCamera() {
+    camera.x = 0;
+    camera.y = 0;
+    camera.prevX = 0;
+    camera.prevY = 0;
+}
+
 export let gameTime = 0;
 
 export let wave = 1;

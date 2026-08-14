@@ -5,14 +5,36 @@
 export const canvas = document.getElementById("gameCanvas");
 export const ctx = canvas.getContext("2d");
 
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
-
 export const VIEW_WIDTH = 800;
 export const VIEW_HEIGHT = 500;
 
-canvas.width = VIEW_WIDTH * DPR;
-canvas.height = VIEW_HEIGHT * DPR;
-ctx.scale(DPR, DPR);
+// ======================
+// RESIZE HANDLING
+// ======================
+
+// Recalculates the canvas backing-buffer size to match its CSS display
+// size × device pixel ratio. Called on init and on window resize.
+
+export function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+
+    const displayWidth = Math.round(rect.width) || VIEW_WIDTH;
+    const displayHeight = Math.round(rect.height) || VIEW_HEIGHT;
+
+    if (canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr) {
+        canvas.width = displayWidth * dpr;
+        canvas.height = displayHeight * dpr;
+    }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(
+        (displayWidth * dpr) / VIEW_WIDTH,
+        (displayHeight * dpr) / VIEW_HEIGHT
+    );
+}
+
+resizeCanvas();
 
 // ======================
 // CONFIG

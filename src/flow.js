@@ -10,7 +10,8 @@ import {
     LEVEL_HEAL,
     WAVE_BREAK_TIME,
     DASH_COOLDOWN,
-    VIEW_WIDTH
+    VIEW_WIDTH,
+    VIEW_HEIGHT
 } from "./config.js";
 
 import {
@@ -25,7 +26,9 @@ import {
     setWaveTimer,
     setPortalActive,
     setPortalTimer,
-    setNewHighScore
+    setNewHighScore,
+    camera,
+    resetCamera
 } from "./state.js";
 
 import { AudioFX } from "./audio.js";
@@ -55,6 +58,18 @@ export function resetRun() {
     player.cleaveMult = 1;
     player.pendingLevels = 0;
     resetPlayer();
+
+    resetCamera();
+    camera.x = player.x + player.width / 2 - VIEW_WIDTH / 2;
+    camera.y = player.y + player.height / 2 - VIEW_HEIGHT / 2;
+    if (currentLevel) {
+        const worldW = currentLevel.cols * 50;
+        const worldH = currentLevel.rows * 50;
+        camera.x = Math.max(0, Math.min(worldW - VIEW_WIDTH, camera.x));
+        camera.y = Math.max(0, Math.min(worldH - VIEW_HEIGHT, camera.y));
+    }
+    camera.prevX = camera.x;
+    camera.prevY = camera.y;
 
     enemies.length = 0;
     loot.length = 0;
@@ -145,6 +160,17 @@ export function advanceLevel() {
     player.y = currentLevel.spawn.y;
     player.prevX = player.x;
     player.prevY = player.y;
+
+    resetCamera();
+    camera.x = player.x + player.width / 2 - VIEW_WIDTH / 2;
+    camera.y = player.y + player.height / 2 - VIEW_HEIGHT / 2;
+    const worldW = currentLevel.cols * 50;
+    const worldH = currentLevel.rows * 50;
+    camera.x = Math.max(0, Math.min(worldW - VIEW_WIDTH, camera.x));
+    camera.y = Math.max(0, Math.min(worldH - VIEW_HEIGHT, camera.y));
+    camera.prevX = camera.x;
+    camera.prevY = camera.y;
+
     player.health = Math.min(player.maxHealth, player.health + LEVEL_HEAL);
 
     setWave(wave + 1);

@@ -10,7 +10,8 @@ import {
     PORTAL_TIME,
     WAVE_VICTORY,
     FIXED_DT,
-    MAX_FRAME_TIME
+    MAX_FRAME_TIME,
+    resizeCanvas
 } from "./config.js";
 
 import {
@@ -29,8 +30,11 @@ import {
     setPortalActive,
     setPortalTimer,
     tickWaveTimer,
-    tickPortalTimer
+    tickPortalTimer,
+    camera
 } from "./state.js";
+
+import { cameraUpdate } from "./logic/camera.js";
 
 import { registerFlow } from "./events.js";
 import { AudioFX } from "./audio.js";
@@ -100,8 +104,10 @@ function spawnWave(waveNumber) {
     enemies.length = 0;
 
     const list = waveEnemyList(waveNumber);
+    const worldW = currentLevel.cols * 50;
+    const worldH = currentLevel.rows * 50;
     const points = findSpawnPoints(currentMap, solidObjects, player, list.length, {
-        bounds: { x: 60, y: 60, w: VIEW_WIDTH - 200, h: VIEW_HEIGHT - 120 }
+        bounds: { x: 60, y: 60, w: worldW - 120, h: worldH - 120 }
     });
     const hpScale = 1 + (waveNumber - 1) * 0.12;
 
@@ -211,6 +217,11 @@ function update(dt) {
     updateProjectiles(dt);
     playerAttack(dt);
     updateWaves(dt);
+
+    // Update camera follow player
+    const worldW = currentLevel.cols * 50;
+    const worldH = currentLevel.rows * 50;
+    cameraUpdate(camera, player, worldW, worldH, VIEW_WIDTH, VIEW_HEIGHT, dt, 0.08);
 }
 
 // ======================
@@ -249,15 +260,20 @@ function drawPortal(gameTime) {
 function draw(alpha) {
     ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 
+    const camX = camera.x + (camera.x - camera.prevX) * alpha;
+    const camY = camera.y + (camera.y - camera.prevY) * alpha;
+
     ctx.save();
 
+    let shakeX = 0;
+    let shakeY = 0;
     if (getShake() > 0.1) {
         const s = getShake();
-        ctx.translate(
-            (Math.random() - 0.5) * s,
-            (Math.random() - 0.5) * s
-        );
+        shakeX = (Math.random() - 0.5) * s;
+        shakeY = (Math.random() - 0.5) * s;
     }
+
+    ctx.translate(-camX + shakeX, -camY + shakeY);
 
     drawMap(gameTime);
     drawTorchLights(gameTime);
@@ -271,10 +287,11 @@ function draw(alpha) {
 
     ctx.restore();
 
-    // Lighting (darkness around the player)
-
-    const centerX = player.x + player.width / 2;
-    const centerY = player.y + player.height / 2;
+    // Lighting (darkness around the player, converted to screen space)
+    const playerCenterX = player.x + (player.x - player.prevX) * alpha + player.width / 2;
+    const playerCenterY = player.y + (player.y - player.prevY) * alpha + player.height / 2;
+    const centerX = playerCenterX - camX;
+    const centerY = playerCenterY - camY;
 
     const gradient = ctx.createRadialGradient(centerX, centerY, 70, centerX, centerY, 380);
 
@@ -329,5 +346,9 @@ function gameLoop(timestamp) {
 
 buildLevel(0);
 goTitle();
+
+window.addEventListener("resize", function () {
+    resizeCanvas();
+});
 
 requestAnimationFrame(gameLoop);

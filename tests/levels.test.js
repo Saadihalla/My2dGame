@@ -40,6 +40,15 @@ describe("level data", () => {
             const map = buildMap(level);
             const solids = buildSolids(level);
 
+            it("has consistent dimensions of 32x20", () => {
+                expect(level.cols).toBe(32);
+                expect(level.rows).toBe(20);
+                expect(level.tiles).toHaveLength(20);
+                for (const row of level.tiles) {
+                    expect(row).toHaveLength(32);
+                }
+            });
+
             it("spawn point is free of solids (player box must not be trapped)", () => {
                 expect(isColliding(
                     level.spawn.x,
