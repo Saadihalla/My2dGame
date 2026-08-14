@@ -1,0 +1,59 @@
+Okay, let's reset this properly because the issue is that you don't have AI vision, so you were trying to infer what the sprites look like from their filenames. I checked the actual spritesheet.png visually, and the JSON you already have confirms the animation structure.
+
+Actual visual mapping
+
+The four names that have complete character animation sets are:
+
+player_* → red demon/devil character — this is the player
+caster_* → purple-robed mage/caster
+exploder_* → skeleton enemy
+warden_* → blue-armored knight/warden
+
+Each of those has proper idle, walk, attack, hurt, and death animations in the JSON.
+
+The rest are NOT character sprites, despite their enemy-sounding names:
+
+grunt_idle_0 → red potion/bottle
+tank_idle_0 → shield
+boss_idle_0 → gold/blue ring
+fast_idle_0 → key
+swarm_idle_0 → sword
+potion_0 → heart
+upgrade_0 → coin
+What the JSON tells us
+
+The JSON contains 11 named gameplay assets, but only 4 are actual animated characters:
+
+player, caster, exploder, warden
+
+The other 7 are single-frame/object assets. In particular, grunt, tank, boss, fast, and swarm are misleading names — their actual pixels are objects, not enemy characters.
+
+So your earlier conclusion that this is basically a "devil fighting bottles, flying swords and keys" was actually pretty close to the visual reality 😂. The problem is that you interpreted those objects as the intended enemy roster because of their filenames.
+
+The actual problem
+
+If the game is supposed to have 9 character/enemy types, then the current spritesheet simply does not contain 9 character types.
+
+We currently have:
+
+Player — red demon
+Caster — purple mage
+Exploder — skeleton
+Warden — blue knight
+
+And we're missing 5 actual enemy character spritesets.
+
+Do not fix this by renaming/remapping the potion, shield, ring, key, sword, heart, or coin into enemy types. That would make the game technically satisfy the names while visually being completely wrong.
+
+Instead:
+
+Preserve the existing 4 valid character spritesets.
+Preserve the object/item assets as objects.
+Identify the original intended 9-enemy roster from the game's roadmap/code if available.
+Regenerate the 5 missing character types, using the exact intended names.
+Give those 5 characters the same animation structure as the existing ones: idle, walk, attack, hurt, death.
+Update spritesheet.json only after the new sprites actually exist.
+
+So the issue is not a naming problem in the JSON. It's an asset-generation/content problem: the generated spritesheet does not contain the 9 required character types.
+
+And yes, your "cursed potion shop" diagnosis was accidentally accurate. 😂
