@@ -53,12 +53,12 @@ export function drawBanners() {
         ctx.save();
         ctx.globalAlpha = Math.min(1, fadeIn) * fadeOut;
 
-        drawPanel(ctx, VIEW_WIDTH / 2 - 170, y - 34 + offset, 340, 54);
+        drawPanel(ctx, VIEW_WIDTH / 2 - 175, y - 34 + offset, 350, 62);
 
         drawText(ctx, banner.text, VIEW_WIDTH / 2, y + offset, 15, "#ffffff", "center");
 
         if (banner.sub) {
-            drawText(ctx, banner.sub, VIEW_WIDTH / 2, y + 22 + offset, 8, "#dddddd", "center");
+            drawText(ctx, banner.sub, VIEW_WIDTH / 2, y + 24 + offset, 8, "#dddddd", "center");
         }
 
         ctx.restore();

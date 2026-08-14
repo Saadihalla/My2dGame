@@ -14,6 +14,10 @@ export const VIEW_HEIGHT = 500;
 
 // Recalculates the canvas backing-buffer size to match its CSS display
 // size × device pixel ratio. Called on init and on window resize.
+//
+// The canvas fills the entire viewport edge-to-edge. The logical 800×500
+// view is mapped onto whatever rectangle the window is, so the game is
+// always full screen (slight non-uniform stretch on non-8:5 windows).
 
 export function resizeCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);

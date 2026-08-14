@@ -63,22 +63,25 @@ export function decodePng(file) {    const buf = readFileSync(file);
         }
         pos += 12 + len;
     }
-    if (bitDepth !== 8 || colorType !== 6) throw new Error("unsupported PNG (want 8-bit RGBA)");
+    if (bitDepth !== 8 || (colorType !== 6 && colorType !== 2)) {
+        throw new Error("unsupported PNG (want 8-bit RGB/RGBA)");
+    }
 
     const raw = inflateSync(Buffer.concat(idat));
-    const bpp = 4;
-    const stride = width * bpp;
-    const out = Buffer.alloc(width * height * bpp);
     let src = 0;
+    const pixelBytes = colorType === 6 ? 4 : 3;
+    const stride = width * pixelBytes;
+    const out = Buffer.alloc(width * height * 4);
+    const row = Buffer.alloc(stride);
+    const prevRow = Buffer.alloc(stride);
+
     for (let y = 0; y < height; y++) {
         const filter = raw[src++];
-        const rowStart = y * stride;
-        const prevStart = rowStart - stride;
         for (let i = 0; i < stride; i++) {
             const rawByte = raw[src++];
-            const left = i >= bpp ? out[rowStart + i - bpp] : 0;
-            const up = y > 0 ? out[prevStart + i] : 0;
-            const upLeft = y > 0 && i >= bpp ? out[prevStart + i - bpp] : 0;
+            const left = i >= pixelBytes ? row[i - pixelBytes] : 0;
+            const up = y > 0 ? prevRow[i] : 0;
+            const upLeft = y > 0 && i >= pixelBytes ? prevRow[i - pixelBytes] : 0;
             let val;
             switch (filter) {
                 case 0: val = rawByte; break;
@@ -93,8 +96,28 @@ export function decodePng(file) {    const buf = readFileSync(file);
                 }
                 default: throw new Error("bad filter " + filter);
             }
-            out[rowStart + i] = val & 0xff;
+            row[i] = val & 0xff;
         }
+
+        // Copy (and, for RGB, expand to RGBA) into the output.
+        const dstStart = y * width * 4;
+        for (let i = 0; i < width; i++) {
+            const di = dstStart + i * 4;
+            if (pixelBytes === 4) {
+                out[di] = row[i * 4];
+                out[di + 1] = row[i * 4 + 1];
+                out[di + 2] = row[i * 4 + 2];
+                out[di + 3] = row[i * 4 + 3];
+            } else {
+                out[di] = row[i * 3];
+                out[di + 1] = row[i * 3 + 1];
+                out[di + 2] = row[i * 3 + 2];
+                out[di + 3] = 255;
+            }
+        }
+
+        prevRow.set(row);
+        row.fill(0);
     }
     return { width, height, pixels: out };
 }

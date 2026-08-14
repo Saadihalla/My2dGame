@@ -79,6 +79,28 @@ export function drawText(ctx, text, x, y, size, color, align) {
     ctx.fillText(text, x, y);
 }
 
+// Splits text into lines that fit maxWidth at the given font size.
+export function wrapText(ctx, text, size, maxWidth) {
+    setFont(ctx, size, false);
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+
+    for (const word of words) {
+        const test = line ? line + " " + word : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = test;
+        }
+    }
+    if (line) {
+        lines.push(line);
+    }
+    return lines;
+}
+
 // ======================
 // PANEL (9-slice style frame)
 // ======================
@@ -138,10 +160,13 @@ export function drawGradientBar(ctx, x, y, w, h, ratio, from, to, back) {
 // ICONS (pixel glyphs drawn with rects)
 // ======================
 
+// Every glyph fits in a `size`×`size` box: block = size / 5 (all glyphs
+// are at most 5 blocks wide), so icons are never bigger than requested.
+
 export function drawIcon(ctx, kind, x, y, size, color) {
     const c = color || COLORS.gold;
     ctx.fillStyle = c;
-    const s = Math.max(4, Math.floor(size / 3));
+    const s = Math.max(2, Math.floor(size / 5));
 
     if (kind === "sword") {
         // blade

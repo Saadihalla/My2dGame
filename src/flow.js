@@ -139,8 +139,8 @@ export function onPlayerDeath() {
     saveHighScore();
     AudioFX.kill();
     setButtons([
-        makeButton("PLAY AGAIN", restartGame, 265),
-        makeButton("TITLE", goTitle, 325)
+        makeButton("PLAY AGAIN", restartGame, 300),
+        makeButton("TITLE", goTitle, 360)
     ]);
 }
 
@@ -149,8 +149,8 @@ export function victory() {
     saveHighScore();
     AudioFX.fanfare();
     setButtons([
-        makeButton("PLAY AGAIN", restartGame, 290),
-        makeButton("TITLE", goTitle, 350)
+        makeButton("PLAY AGAIN", restartGame, 330),
+        makeButton("TITLE", goTitle, 390)
     ]);
 }
 
@@ -310,10 +310,10 @@ export function openSettings() {
 
 function rebuildSettingsButtons() {
     setButtons([
-        makeButton("VOLUME " + Math.round(Settings.volume * 100) + "%", cycleVolume, 170),
-        makeButton("SCREEN SHAKE: " + (Settings.shake ? "ON" : "OFF"), toggleShake, 230),
-        makeButton("REDUCED MOTION: " + (Settings.reducedMotion ? "ON" : "OFF"), toggleReducedMotion, 290),
-        makeButton("BACK", closeSettings, 350)
+        makeButton("VOLUME " + Math.round(Settings.volume * 100) + "%", cycleVolume, 160, 320),
+        makeButton("SCREEN SHAKE: " + (Settings.shake ? "ON" : "OFF"), toggleShake, 220, 320),
+        makeButton("REDUCED MOTION: " + (Settings.reducedMotion ? "ON" : "OFF"), toggleReducedMotion, 280, 320),
+        makeButton("BACK", closeSettings, 340, 320)
     ]);
 }
 

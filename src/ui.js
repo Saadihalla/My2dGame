@@ -11,6 +11,7 @@ import {
     drawGradientBar,
     drawIcon,
     drawText,
+    wrapText,
     Settings
 } from "./theme.js";
 
@@ -20,11 +21,11 @@ export function setButtons(list) {
     uiButtons = list;
 }
 
-export function makeButton(label, action, y) {
+export function makeButton(label, action, y, width) {
     return {
-        x: VIEW_WIDTH / 2 - 100,
+        x: VIEW_WIDTH / 2 - (width || 200) / 2,
         y: y,
-        w: 200,
+        w: width || 200,
         h: 48,
         label: label,
         action: action,
@@ -73,16 +74,20 @@ function drawButton(button) {
         drawIcon(ctx, upgradeIcon(button.id), button.x + 14, button.y + 13, 30, COLORS.gold);
 
         drawText(ctx, String(button.key), button.x + button.w - 22, button.y + 18, 11, COLORS.gold, "center");
-        drawText(ctx, button.label, button.x + button.w / 2, button.y + 64, 11, COLORS.text, "center");
-        drawText(ctx, button.desc, button.x + button.w / 2, button.y + 82, 7, COLORS.dim, "center");
+        drawText(ctx, button.label, button.x + button.w / 2, button.y + 64, 10, COLORS.text, "center");
+
+        const descLines = wrapText(ctx, button.desc, 7, button.w - 20).slice(0, 2);
+        descLines.forEach(function (line, i) {
+            drawText(ctx, line, button.x + button.w / 2, button.y + 82 + i * 10, 7, COLORS.dim, "center");
+        });
+
         drawText(ctx, "[" + button.key + "] or click", button.x + button.w / 2, button.y + button.h - 10, 7, "rgba(255,255,255,0.5)", "center");
         return;
     }
 
     drawPanel(ctx, button.x, button.y, button.w, button.h);
 
-    const hover = button.hover;
-    ctx.fillStyle = hover ? "rgba(255, 215, 90, 0.15)" : "rgba(255, 215, 90, 0.05)";
+    ctx.fillStyle = "rgba(255, 215, 90, 0.05)";
     ctx.fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2);
 
     drawText(ctx, button.label, button.x + button.w / 2, button.y + button.h / 2 + 6, 12, COLORS.text, "center");
@@ -102,6 +107,8 @@ export function drawHUD() {
 
     drawPanel(ctx, x - 8, y - 8, barWidth + 56, 84);
 
+    // HP: icon, then bar; the number lives on the bar itself so it
+    // never overflows the panel.
     drawIcon(ctx, "heart", x + 4, y + 2, 18, COLORS.red);
     drawGradientBar(
         ctx, x + 26, y + 4, barWidth, barHeight,
@@ -111,7 +118,7 @@ export function drawHUD() {
     drawText(
         ctx,
         Math.max(0, Math.ceil(player.health)) + "/" + player.maxHealth,
-        x + barWidth + 32, y + 13, 8, COLORS.text, "center"
+        x + 26 + barWidth / 2, y + 13, 8, "#fff", "center"
     );
 
     drawIcon(ctx, "upgrade", x + 5, y + 22, 14, COLORS.blue);
@@ -129,8 +136,8 @@ export function drawHUD() {
     );
 
     drawText(ctx, "LV " + player.level, x + 2, y + 62, 9, COLORS.text);
-    drawText(ctx, "DMG " + player.damage, x + 74, y + 62, 9, "#7ec8ff");
-    drawText(ctx, "RNG " + player.range, x + 150, y + 62, 9, "#c07bff");
+    drawText(ctx, "DMG " + player.damage, x + 66, y + 62, 9, "#7ec8ff");
+    drawText(ctx, "RNG " + player.range, x + 136, y + 62, 9, "#c07bff");
 
     // ----- Picked upgrades row (bottom-left) -----
 
@@ -277,15 +284,15 @@ export function drawOverlays() {
     if (gameState === "gameover") {
         drawEmbers(3);
 
-        drawText(ctx, "GAME OVER", VIEW_WIDTH / 2, 92, 34, COLORS.red, "center");
+        drawText(ctx, "GAME OVER", VIEW_WIDTH / 2, 84, 34, COLORS.red, "center");
 
-        drawPanel(ctx, VIEW_WIDTH / 2 - 190, 112, 380, 96);
-        drawStatsBreakdown();
+        drawPanel(ctx, VIEW_WIDTH / 2 - 210, 100, 420, 150);
+        drawStatsBreakdown(100);
 
         if (newHighScore) {
             const pulse = Settings.reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(gameTime * 5);
             ctx.globalAlpha = pulse;
-            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 232, 12, COLORS.gold, "center");
+            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 268, 12, COLORS.gold, "center");
             ctx.globalAlpha = 1;
         }
 
@@ -298,14 +305,14 @@ export function drawOverlays() {
     if (gameState === "victory") {
         drawEmbers(4);
 
-        drawText(ctx, "VICTORY", VIEW_WIDTH / 2, 92, 34, COLORS.gold, "center");
-        drawText(ctx, "The Pale King is dead. The darkness fades.", VIEW_WIDTH / 2, 126, 9, "#ddd", "center");
+        drawText(ctx, "VICTORY", VIEW_WIDTH / 2, 84, 34, COLORS.gold, "center");
+        drawText(ctx, "The Pale King is dead. The darkness fades.", VIEW_WIDTH / 2, 118, 9, "#ddd", "center");
 
-        drawPanel(ctx, VIEW_WIDTH / 2 - 190, 142, 380, 96);
-        drawStatsBreakdown();
+        drawPanel(ctx, VIEW_WIDTH / 2 - 210, 132, 420, 150);
+        drawStatsBreakdown(132);
 
         if (newHighScore) {
-            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 258, 12, COLORS.gold, "center");
+            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 298, 12, COLORS.gold, "center");
         }
 
         for (const button of uiButtons) {
@@ -314,13 +321,15 @@ export function drawOverlays() {
     }
 }
 
-// Shared run-stats breakdown used by game-over and victory.
-function drawStatsBreakdown() {
+// Shared run-stats breakdown used by game-over and victory. Everything is
+// positioned relative to the panel's top so it never overflows.
+function drawStatsBreakdown(panelY) {
     const cx = VIEW_WIDTH / 2;
+    const panelBottom = panelY + 150;
 
-    drawText(ctx, "Score " + stats.score + " · Wave " + Math.max(1, wave), cx, 128, 9, COLORS.gold, "center");
-    drawText(ctx, "Survived " + stats.survived.toFixed(1) + "s · Damage dealt " + stats.damageDealt, cx, 144, 7, "#ddd", "center");
-    drawText(ctx, "Hits taken " + stats.hitsTaken + " · Kills " + stats.kills, cx, 158, 7, "#ddd", "center");
+    drawText(ctx, "Score " + stats.score + " · Wave " + Math.max(1, wave), cx, panelY + 16, 9, COLORS.gold, "center");
+    drawText(ctx, "Survived " + stats.survived.toFixed(1) + "s · Damage dealt " + stats.damageDealt, cx, panelY + 32, 7, "#ddd", "center");
+    drawText(ctx, "Hits taken " + stats.hitsTaken + " · Kills " + stats.kills, cx, panelY + 46, 7, "#ddd", "center");
 
     // Kills by type (most lethal first)
     const byType = stats.byType || {};
@@ -328,20 +337,24 @@ function drawStatsBreakdown() {
         .map((type) => ({ type: type, count: byType[type] }))
         .filter((r) => r.count > 0)
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+        .slice(0, 4);
 
     if (rows.length === 0) {
         return;
     }
 
     const step = 14;
-    const startY = 176;
+    const startY = panelY + 64;
     rows.forEach(function (row, i) {
+        const y = startY + i * step;
+        if (y > panelBottom - 8) {
+            return;
+        }
         const name = (ENEMY_TYPES[row.type] && ENEMY_TYPES[row.type].name) || row.type;
         ctx.textAlign = "left";
-        drawText(ctx, name, cx - 150, startY + i * step, 7, "#bbb", "left");
+        drawText(ctx, name, cx - 170, y, 7, "#bbb", "left");
         ctx.textAlign = "right";
-        drawText(ctx, String(row.count), cx + 150, startY + i * step, 7, COLORS.gold, "right");
+        drawText(ctx, String(row.count), cx + 170, y, 7, COLORS.gold, "right");
     });
 }
 

@@ -39,7 +39,7 @@ import {
 import { cameraUpdate } from "./logic/camera.js";
 
 import { registerFlow } from "./events.js";
-import { AudioFX } from "./audio.js";
+import { AudioFX, loadSfx } from "./audio.js";
 import {
     getShake,
     updateFX,
@@ -373,7 +373,18 @@ goTitle();
 
 Assets.load();
 
+// Load the Hit / Dash / Damage wav pools (Damage is optional — the
+// player-hurt sound falls back to the synth until that folder exists).
+
+loadSfx();
+
 window.addEventListener("resize", function () {
+    resizeCanvas();
+});
+
+// Re-letterbox once the page (fonts, styles) is fully laid out — the
+// module-time resizeCanvas call can run before the browser has applied CSS.
+window.addEventListener("load", function () {
     resizeCanvas();
 });
 
