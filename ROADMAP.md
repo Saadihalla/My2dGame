@@ -75,6 +75,142 @@ Converted the architecture so everything after is easier, safer, and testable.
 
 ---
 
+## Phase 1.5 — UI, Assets, Animations, Particles & Dynamic Scale
+
+Goal: stop being a small static 800×500 window. Bigger camera-driven maps, a
+responsive viewport, real sprite assets, frame animations, a proper particle
+system, and a full UI overhaul. Order matters — each phase builds on the last.
+
+### Phase A — Dynamic viewport + camera (FOUNDATION, do first)
+
+Everything else hangs off this. Maps become bigger than one screen, the
+camera follows the player, and the canvas adapts to the window.
+
+**Specs / decisions**
+- Keep `TILE = 50`; levels become multi-screen: target 32×20 tiles
+  (1600×1000 world) with per-level dimensions in the level data
+  (`width`/`height` in tiles instead of fixed 16×10 strings)
+- Logical view stays ~800×500 for gameplay/HUD layout; camera shows a window
+  into the world
+- Desktop: canvas letterboxed with a themed backdrop; Mobile: full-screen,
+  safe-area aware
+- Camera: player-follow with smoothing (lerp), clamped to map bounds,
+  integrated with existing screen shake
+- HUD stays in *screen* space — never scrolls with the camera
+
+**Tasks**
+1. `logic/camera.js` — pure camera math: `cameraUpdate(cam, target, bounds,
+   dt)`, `worldToScreen`, clamp; unit tests
+2. Level data: per-level `width`/`height`, build maps from rows of that size
+3. Rewrite `drawMap` to render through a camera transform; pre-render the
+   static tile layer to an offscreen canvas once per level build
+4. Tile/entity culling: only draw what intersects the viewport
+5. Resize handling: `resize` listener → recompute canvas size + DPR +
+   buffers; HUD anchored to screen corners (already true — verify)
+6. Re-anchor world-space effects: darkness gradient, torch lights, portal,
+   dash pixelation (its 96px offscreen canvas must stay screen-anchored)
+7. Spawn bounds / portal placement use world size; update level tests
+
+**Verification**: resize browser window mid-game (no artifacts), camera
+smooths without jitter, all existing tests still pass, level-data tests
+extended for the new dimensions.
+
+### Phase B — Asset pipeline
+
+Move from 100% procedural `fillRect` art to real sprite assets while keeping
+procedural sprites as placeholders/fallbacks.
+
+**Tasks**
+1. `assets/` folder + `src/assets.js` loader module: preload PNGs with
+   progress, `image-rendering: pixelated`
+2. Sprite sheet format: PNG sheet + JSON frame defs (name, x, y, w, h,
+   anchor, per-state frame lists)
+3. `logic/frames.js` — pure frame lookup (sheet + state + time → frame
+   index), unit tested
+4. Swap procedural player/enemy/torch/projectile draws to sheet draws;
+   keep the procedural versions as a fallback flag
+5. Pixel font: bundle a bitmap pixel font (or webfont like Press Start 2P)
+   replacing Arial/Georgia everywhere — instant mood upgrade
+
+**Verification**: dev server serves sheets, no broken images, `npm run build`
+bundles assets, pixel font renders in HUD/screens.
+
+### Phase C — Animation system
+
+Frame-based animation controllers replacing static sprites.
+
+**Tasks**
+1. `src/animation.js` — controller per entity: `setState`, `update(dt)`,
+   `currentFrame(time)`; states: idle, walk, attack, hurt, dash, death
+2. Player: idle bob/breathing, 4-dir walk cycle, attack lunge (body shifts
+   into the swing), dash frames layered with the pixel-air effect
+3. Enemies (each type): idle/walk cycles, attack lunge, stagger lean on hit,
+   windup shake, dissolve-on-death with particles
+4. `logic/tween.js` — pure easing/tween helpers (lerp, bounce, elastic) for
+   UI + entity motion; unit tests
+5. Screen transitions: title fade-in, portal warp flash, banner slide/fade
+6. Replace the rect-based swing with a sheet swing arc + motion trail
+
+**Verification**: walk cycles flip/loop correctly in all 4 directions,
+attacks don't desync from hitboxes, no test regressions.
+
+### Phase D — Particle overhaul
+
+Turn the single square-particle system into a real emitter system.
+
+**Tasks**
+1. `logic/particles.js` — emitter configs: shape (rect/circle/line),
+   gravity, drag, spin, size + alpha curves, additive blending flag,
+   per-emitter palette; pure update math, unit tested
+2. Pooling: preallocated particle pool, no per-frame array splice churn
+3. `src/fx.js` rewrite: typed emitters (spark, smoke, shard, ember, blood)
+   replacing `spawnParticles`
+4. Effect inventory:
+   - hits (per-enemy palettes), crit explosion, kill burst
+   - dash trail, explosion shockwave ring + smoke + debris
+   - shield clink, level-up confetti, portal swirl
+   - ambient per level: forest leaves, crypt ash, highlands embers
+   - torch embers, death dissolve
+5. Damage numbers: crit pop scale, easing float
+
+**Verification**: 60fps with large crowds (pool stats exposed in debug),
+ambient effects present per level, additive effects don't blow out the canvas
+state.
+
+### Phase E — UI overhaul
+
+Visual language + richer screens + mobile + settings.
+
+**Tasks**
+1. Theme system: dark-fantasy panels (9-slice frames), gold accents,
+   consistent spacing; single `src/theme.js`
+2. HUD: gradient bars with icons (sword/potion/dash), picked-upgrade icon
+   row, boss health bar top-center, wave progress
+3. Screens: animated title (embers + moving backdrop), level-up cards with
+   icons + stat preview, game-over with run stats breakdown (kills by type,
+   damage dealt, time per wave), victory recap
+4. Mobile: dynamic joystick (spawns under the thumb), safe-area insets,
+   press-state glow on buttons, bigger touch targets
+5. Settings screen: sound volume, screen shake toggle, reduced-motion,
+   control hints; persisted in localStorage
+6. Banners: slide/fade animations with the tween module
+
+**Verification**: mobile viewport 390px + landscape, click targets ≥44px,
+settings persist across reloads, no console errors.
+
+### Risks & notes
+
+- **Phase A touches everything** (draw order, lighting gradients, HUD
+  anchoring, dash pixelation, spawn logic) — do it in one sitting with the
+  browser smoke test after every sub-step
+- World-space vs screen-space split: entities/particles/lighting render in
+  world space (camera transform); HUD/overlays/banners in screen space
+- The dash pixelation offscreen canvas must move with the camera
+- Keep `logic/*` modules DOM-free — camera, frames, tween, particles all
+  unit-testable
+
+---
+
 ## Phase 2 — Content & systems depth ⏳ NEXT
 
 The biggest replayability win; nothing here needs rework of the foundation.
@@ -135,6 +271,9 @@ Only after Phases 0–3.
 - `barHealth` easing on enemy health bars is legacy-kept; consider removing
 - No audio mute/settings persistence beyond high score
 - No touch layout tuning beyond the default phone viewport
+- Vite HMR full-reloads during edits make long browser-test sessions flaky —
+  restart the dev server or use cache-busted URLs (`/?v=<timestamp>`) when
+  testing for a while
 
 ## Workflow notes
 
