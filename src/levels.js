@@ -7,6 +7,8 @@ import { isColliding as rectCollides } from "./logic/collision.js";
 import { LEVELS } from "./logic/levelData.js";
 import { camera } from "./state.js";
 import { isInView } from "./logic/camera.js";
+import { Assets } from "./assets.js";
+import { getAnimationFrame } from "./logic/frames.js";
 
 export { aabb } from "./logic/collision.js";
 export { LEVELS };
@@ -156,6 +158,33 @@ function drawTorch(gctx, x, y, time) {
     gctx.fillRect(x - 1, y - 9 - flicker * 0.4, 8, 9 + flicker);
 }
 
+// Torch from the sprite sheet when available (anchored so the flame
+// lines up with the light gradient), procedural fallback otherwise.
+
+function drawTorchSprite(gctx, x, y, time) {
+    if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+        const frameData = getAnimationFrame(Assets.spritesheetDef, "torch", "idle", time);
+
+        if (frameData) {
+            const frame = frameData.frame;
+            const anchor = frameData.anchor;
+
+            gctx.save();
+            gctx.imageSmoothingEnabled = false;
+            const s = frameData.scale || 1;
+            gctx.drawImage(
+                Assets.spritesheet,
+                frame.x, frame.y, frame.w, frame.h,
+                x - anchor.x * s, y - anchor.y * s, frame.w * s, frame.h * s
+            );
+            gctx.restore();
+            return;
+        }
+    }
+
+    drawTorch(gctx, x, y, time);
+}
+
 function preRenderMap() {
     const p = currentLevel.palette;
 
@@ -251,7 +280,7 @@ export function drawMap(time) {
 
     for (const torch of currentLevel.torches) {
         if (isInView(torch[0] - 10, torch[1] - 15, 26, 45, camera.x, camera.y, viewW, viewH, margin)) {
-            drawTorch(ctx, torch[0], torch[1], time);
+            drawTorchSprite(ctx, torch[0], torch[1], time);
         }
     }
 }

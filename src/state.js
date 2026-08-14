@@ -26,7 +26,9 @@ export const stats = {
     score: 0,
     kills: 0,
     hitsTaken: 0,
-    survived: 0
+    survived: 0,
+    damageDealt: 0,
+    byType: {}
 };
 
 export let highScore = 0;

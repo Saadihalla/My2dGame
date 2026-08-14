@@ -1,10 +1,18 @@
 // ======================
-// UI (HUD, banners, screens, buttons)
+// UI (HUD, screens, buttons, settings)
 // ======================
 
 import { canvas, ctx, VIEW_WIDTH, VIEW_HEIGHT, DASH_COOLDOWN } from "./config.js";
-import { gameState, stats, wave, highScore, newHighScore } from "./state.js";
-import { player } from "./entities.js";
+import { gameState, gameTime, stats, wave, waveState, waveTimer, highScore, newHighScore } from "./state.js";
+import { player, enemies, ENEMY_TYPES } from "./entities.js";
+import {
+    COLORS,
+    drawPanel,
+    drawGradientBar,
+    drawIcon,
+    drawText,
+    Settings
+} from "./theme.js";
 
 let uiButtons = [];
 
@@ -19,11 +27,12 @@ export function makeButton(label, action, y) {
         w: 200,
         h: 48,
         label: label,
-        action: action
+        action: action,
+        kind: "button"
     };
 }
 
-export function makeCard(label, desc, key, x, y, w, h, action) {
+export function makeCard(label, desc, key, x, y, w, h, action, id) {
     return {
         x: x,
         y: y,
@@ -32,52 +41,51 @@ export function makeCard(label, desc, key, x, y, w, h, action) {
         label: label,
         desc: desc,
         key: key,
+        id: id,
         kind: "card",
         action: action
     };
 }
 
+const UPGRADE_ICONS = {
+    damage: "sword",
+    range: "sword",
+    speed: "sword",
+    vitality: "heart",
+    boots: "dash",
+    reflex: "dash",
+    crit: "upgrade",
+    lifesteal: "potion",
+    cleave: "upgrade"
+};
+
+function upgradeIcon(id) {
+    return UPGRADE_ICONS[id] || "upgrade";
+}
+
 function drawButton(button) {
     if (button.kind === "card") {
-        ctx.fillStyle = "#1c1c22";
-        ctx.fillRect(button.x, button.y, button.w, button.h);
+        drawPanel(ctx, button.x, button.y, button.w, button.h);
 
-        ctx.strokeStyle = "#ffd75a";
-        ctx.strokeRect(button.x, button.y, button.w, button.h);
+        ctx.fillStyle = COLORS.panelLight;
+        ctx.fillRect(button.x + 8, button.y + 8, button.w - 16, 42);
 
-        ctx.fillStyle = "#3498db";
-        ctx.fillRect(button.x + 10, button.y + 10, 22, 22);
+        drawIcon(ctx, upgradeIcon(button.id), button.x + 14, button.y + 13, 30, COLORS.gold);
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 13px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(String(button.key), button.x + 21, button.y + 25);
-
-        ctx.fillStyle = "#ffd75a";
-        ctx.font = "bold 15px Georgia, serif";
-        ctx.fillText(button.label, button.x + button.w / 2, button.y + 34);
-
-        ctx.fillStyle = "#cccccc";
-        ctx.font = "12px Arial";
-        ctx.fillText(button.desc, button.x + button.w / 2, button.y + 58);
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.font = "11px Arial";
-        ctx.fillText("click or press [" + button.key + "]", button.x + button.w / 2, button.y + button.h - 14);
+        drawText(ctx, String(button.key), button.x + button.w - 22, button.y + 18, 11, COLORS.gold, "center");
+        drawText(ctx, button.label, button.x + button.w / 2, button.y + 64, 11, COLORS.text, "center");
+        drawText(ctx, button.desc, button.x + button.w / 2, button.y + 82, 7, COLORS.dim, "center");
+        drawText(ctx, "[" + button.key + "] or click", button.x + button.w / 2, button.y + button.h - 10, 7, "rgba(255,255,255,0.5)", "center");
         return;
     }
 
-    ctx.fillStyle = "#3498db";
-    ctx.fillRect(button.x, button.y, button.w, button.h);
+    drawPanel(ctx, button.x, button.y, button.w, button.h);
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.strokeRect(button.x, button.y, button.w, button.h);
+    const hover = button.hover;
+    ctx.fillStyle = hover ? "rgba(255, 215, 90, 0.15)" : "rgba(255, 215, 90, 0.05)";
+    ctx.fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2);
 
-    ctx.fillStyle = "white";
-    ctx.font = "bold 20px Arial";
-    ctx.textAlign = "center";
-
-    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 7);
+    drawText(ctx, button.label, button.x + button.w / 2, button.y + button.h / 2 + 6, 12, COLORS.text, "center");
 }
 
 // ======================
@@ -85,89 +93,118 @@ function drawButton(button) {
 // ======================
 
 export function drawHUD() {
-    const barWidth = 200;
-    const barHeight = 16;
+    const barWidth = 170;
+    const barHeight = 12;
+    const x = 16;
+    const y = 14;
 
-    const x = 20;
-    const y = 20;
+    // ----- Left panel: health / xp / dash -----
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.fillRect(x - 6, y - 6, barWidth + 12, 62);
+    drawPanel(ctx, x - 8, y - 8, barWidth + 56, 84);
 
-    // Health
-
-    ctx.fillStyle = "darkred";
-    ctx.fillRect(x, y, barWidth, barHeight);
-
-    ctx.fillStyle = "lime";
-    ctx.fillRect(x, y, barWidth * Math.max(0, player.health / player.maxHealth), barHeight);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.strokeRect(x, y, barWidth, barHeight);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 11px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(
-        "HP " + Math.max(0, Math.ceil(player.health)) + "/" + player.maxHealth,
-        x + 4,
-        y + 13
+    drawIcon(ctx, "heart", x + 4, y + 2, 18, COLORS.red);
+    drawGradientBar(
+        ctx, x + 26, y + 4, barWidth, barHeight,
+        Math.max(0, player.health / player.maxHealth),
+        "#ff6b6b", "#a01818"
+    );
+    drawText(
+        ctx,
+        Math.max(0, Math.ceil(player.health)) + "/" + player.maxHealth,
+        x + barWidth + 32, y + 13, 8, COLORS.text, "center"
     );
 
-    // XP
-
-    ctx.fillStyle = "#1a3a5a";
-    ctx.fillRect(x, y + 22, barWidth, 8);
-
-    ctx.fillStyle = "#4a9fe8";
-    ctx.fillRect(x, y + 22, barWidth * Math.min(1, player.xp / player.xpNext), 8);
-
-    // Dash cooldown
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.fillRect(x, y + 34, barWidth, 5);
-
-    ctx.fillStyle = player.dashCooldown > 0 ? "#777777" : "#7dff8a";
-    ctx.fillRect(
-        x,
-        y + 34,
-        barWidth * Math.max(0, 1 - player.dashCooldown / DASH_COOLDOWN),
-        5
+    drawIcon(ctx, "upgrade", x + 5, y + 22, 14, COLORS.blue);
+    drawGradientBar(
+        ctx, x + 26, y + 24, barWidth, 7,
+        Math.min(1, player.xp / player.xpNext),
+        "#7ec8ff", "#2a5a8a"
     );
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.font = "11px Arial";
-    ctx.fillText("LV " + player.level, x + 2, y + 50);
-
-    ctx.fillStyle = "#7ec8ff";
-    ctx.fillText("DMG " + player.damage + " · RNG " + player.range, x + 60, y + 50);
-
-    // Stats (top-right)
-
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.fillRect(VIEW_WIDTH - 216, 14, 200, 62);
-
-    ctx.textAlign = "right";
-
-    ctx.fillStyle = "#ffd75a";
-    ctx.font = "bold 18px Georgia, serif";
-    ctx.fillText("SCORE " + stats.score, VIEW_WIDTH - 16, 34);
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.font = "13px Arial";
-    ctx.fillText(
-        "WAVE " + Math.max(1, wave) + " · KILLS " + stats.kills,
-        VIEW_WIDTH - 16,
-        52
+    drawIcon(ctx, "dash", x + 5, y + 38, 14, player.dashCooldown > 0 ? "#666" : COLORS.green);
+    drawGradientBar(
+        ctx, x + 26, y + 40, barWidth, 6,
+        Math.max(0, 1 - player.dashCooldown / DASH_COOLDOWN),
+        "#7dff8a", "#2a6a3a"
     );
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
-    ctx.font = "12px Arial";
-    ctx.fillText(
-        stats.survived.toFixed(1) + "s · BEST " + highScore,
-        VIEW_WIDTH - 16,
-        68
-    );
+    drawText(ctx, "LV " + player.level, x + 2, y + 62, 9, COLORS.text);
+    drawText(ctx, "DMG " + player.damage, x + 74, y + 62, 9, "#7ec8ff");
+    drawText(ctx, "RNG " + player.range, x + 150, y + 62, 9, "#c07bff");
+
+    // ----- Picked upgrades row (bottom-left) -----
+
+    const ups = player.pickedUpgrades || [];
+    for (let i = 0; i < ups.length; i++) {
+        drawIcon(ctx, upgradeIcon(ups[i]), 18 + i * 26, VIEW_HEIGHT - 34, 16, COLORS.gold);
+    }
+    if (ups.length > 0) {
+        drawText(ctx, "GEAR", 18, VIEW_HEIGHT - 44, 7, COLORS.dim);
+    }
+
+    // ----- Top-center: boss health bar -----
+
+    const boss = enemies.find((e) => e.type === "boss" && e.health > 0);
+    if (boss) {
+        const bw = 300;
+        const bx = VIEW_WIDTH / 2 - bw / 2;
+        const by = 12;
+
+        drawPanel(ctx, bx - 8, by - 8, bw + 16, 32);
+
+        drawText(ctx, "PALE KING", VIEW_WIDTH / 2, by + 2, 8, COLORS.gold, "center");
+        drawGradientBar(
+            ctx, bx, by + 12, bw, 10,
+            Math.max(0, boss.health / boss.maxHealth),
+            "#ff5a5a", "#6a1010"
+        );
+    }
+
+    // ----- Right panel: score / wave / time -----
+
+    const rx = VIEW_WIDTH - 216;
+    drawPanel(ctx, rx, 6, 200, 68);
+
+    drawText(ctx, "SCORE " + stats.score, VIEW_WIDTH - 16, 20, 12, COLORS.gold, "right");
+    drawText(ctx, "WAVE " + Math.max(1, wave), VIEW_WIDTH - 16, 38, 9, COLORS.text, "right");
+
+    const next = nextWaveCountdown();
+    if (next) {
+        drawText(ctx, next, VIEW_WIDTH - 16, 52, 7, "#7ec8ff", "right");
+    }
+    drawText(ctx, stats.kills + " KILLS", VIEW_WIDTH - 16, 66, 7, COLORS.dim, "right");
+}
+
+function nextWaveCountdown() {
+    if (waveState === "break") {
+        return "NEXT WAVE IN " + Math.ceil(waveTimer) + "s";
+    }
+    if (waveState === "clear") {
+        return "PORTAL OPEN " + Math.ceil(waveTimer) + "s";
+    }
+    return "";
+}
+
+// ======================
+// ANIMATED TITLE BACKDROP
+// ======================
+
+function drawEmbers(seedOffset) {
+    if (Settings.reducedMotion) {
+        return;
+    }
+    const count = 26;
+    for (let i = 0; i < count; i++) {
+        const phase = (i * 0.618) + gameTime * (0.4 + (i % 5) * 0.06);
+        const x = ((i * 97 + phase * 40) % VIEW_WIDTH + VIEW_WIDTH) % VIEW_WIDTH;
+        const y = VIEW_HEIGHT - ((phase * 30) % (VIEW_HEIGHT + 40)) + 20;
+        const flicker = 0.4 + 0.6 * Math.abs(Math.sin(phase * 2.1 + seedOffset));
+
+        ctx.globalAlpha = flicker * 0.5;
+        ctx.fillStyle = i % 3 === 0 ? "#ff9d22" : "#ffd75a";
+        ctx.fillRect(x, y, 3, 3);
+    }
+    ctx.globalAlpha = 1;
 }
 
 // ======================
@@ -179,138 +216,133 @@ export function drawOverlays() {
         return;
     }
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 
     ctx.textAlign = "center";
 
     if (gameState === "title") {
+        drawEmbers(0);
 
-        ctx.fillStyle = "#e6e6e6";
-        ctx.font = "bold 64px Georgia, serif";
-        ctx.fillText("DARK FANTASY", VIEW_WIDTH / 2, 130);
-
-        ctx.fillStyle = "#888888";
-        ctx.font = "18px Arial";
-        ctx.fillText("Survive the waves. Slay the Pale King.", VIEW_WIDTH / 2, 165);
+        drawText(ctx, "DARK FANTASY", VIEW_WIDTH / 2, 118, 40, COLORS.text, "center");
+        drawText(ctx, "Survive the waves. Slay the Pale King.", VIEW_WIDTH / 2, 150, 10, "#888", "center");
 
         if (highScore > 0) {
-            ctx.fillStyle = "#ffd75a";
-            ctx.font = "bold 18px Arial";
-            ctx.fillText("BEST SCORE " + highScore, VIEW_WIDTH / 2, 200);
+            drawText(ctx, "BEST " + highScore, VIEW_WIDTH / 2, 180, 10, COLORS.gold, "center");
         }
-
-        ctx.fillStyle = "#bbbbbb";
-        ctx.font = "14px Arial";
-        ctx.fillText("WASD move · SPACE attack · P pause · R restart", VIEW_WIDTH / 2, 380);
 
         for (const button of uiButtons) {
             drawButton(button);
         }
 
+        drawText(ctx, "WASD MOVE · SPACE ATTACK · P PAUSE · R RESTART", VIEW_WIDTH / 2, VIEW_HEIGHT - 24, 7, "#999", "center");
+        return;
+    }
+
+    if (gameState === "settings") {
+        drawEmbers(1);
+
+        drawText(ctx, "SETTINGS", VIEW_WIDTH / 2, 110, 22, COLORS.gold, "center");
+
+        for (const button of uiButtons) {
+            drawButton(button);
+        }
+
+        drawText(ctx, "SETTINGS ARE SAVED AUTOMATICALLY", VIEW_WIDTH / 2, VIEW_HEIGHT - 40, 7, "#666", "center");
         return;
     }
 
     if (gameState === "levelup") {
+        drawEmbers(2);
 
-        ctx.fillStyle = "#ffd75a";
-        ctx.font = "bold 42px Georgia, serif";
-        ctx.fillText("LEVEL UP", VIEW_WIDTH / 2, 115);
+        drawText(ctx, "LEVEL UP", VIEW_WIDTH / 2, 100, 26, COLORS.gold, "center");
+        drawText(ctx, "Choose an upgrade", VIEW_WIDTH / 2, 130, 9, "#ddd", "center");
 
-        ctx.fillStyle = "#dddddd";
-        ctx.font = "16px Arial";
-        ctx.fillText("Choose an upgrade", VIEW_WIDTH / 2, 145);
-
-        for (const button of uiButtons) { drawButton(button); }
-
+        for (const button of uiButtons) {
+            drawButton(button);
+        }
         return;
     }
 
     if (gameState === "paused") {
+        drawText(ctx, "PAUSED", VIEW_WIDTH / 2, 118, 28, COLORS.text, "center");
+        drawText(ctx, "Wave " + Math.max(1, wave) + " · Score " + stats.score, VIEW_WIDTH / 2, 150, 9, "#ccc", "center");
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 48px Georgia, serif";
-        ctx.fillText("PAUSED", VIEW_WIDTH / 2, 130);
-
-        ctx.fillStyle = "#cccccc";
-        ctx.font = "16px Arial";
-        ctx.fillText("Wave " + Math.max(1, wave) + " · Score " + stats.score, VIEW_WIDTH / 2, 160);
-
-        for (const button of uiButtons) { drawButton(button); }
-
+        for (const button of uiButtons) {
+            drawButton(button);
+        }
         return;
     }
 
     if (gameState === "gameover") {
+        drawEmbers(3);
 
-        ctx.fillStyle = "#ff5a5a";
-        ctx.font = "bold 60px Georgia, serif";
-        ctx.fillText("GAME OVER", VIEW_WIDTH / 2, 120);
+        drawText(ctx, "GAME OVER", VIEW_WIDTH / 2, 92, 34, COLORS.red, "center");
 
-        ctx.fillStyle = "#cccccc";
-        ctx.font = "18px Arial";
-        ctx.fillText(
-            "Score " + stats.score + " · Wave " + Math.max(1, wave) +
-            " · Kills " + stats.kills,
-            VIEW_WIDTH / 2,
-            155
-        );
-
-        ctx.fillStyle = "#aaaaaa";
-        ctx.font = "15px Arial";
-        ctx.fillText(
-            "Survived " + stats.survived.toFixed(1) + "s · " + stats.hitsTaken +
-            " hits taken",
-            VIEW_WIDTH / 2,
-            180
-        );
+        drawPanel(ctx, VIEW_WIDTH / 2 - 190, 112, 380, 96);
+        drawStatsBreakdown();
 
         if (newHighScore) {
-            ctx.fillStyle = "#ffd75a";
-            ctx.font = "bold 22px Arial";
-            ctx.fillText("★ NEW HIGH SCORE ★", VIEW_WIDTH / 2, 215);
-        } else {
-            ctx.fillStyle = "#ffd75a";
-            ctx.font = "16px Arial";
-            ctx.fillText("Best " + highScore, VIEW_WIDTH / 2, 215);
+            const pulse = Settings.reducedMotion ? 1 : 0.7 + 0.3 * Math.sin(gameTime * 5);
+            ctx.globalAlpha = pulse;
+            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 232, 12, COLORS.gold, "center");
+            ctx.globalAlpha = 1;
         }
 
-        for (const button of uiButtons) { drawButton(button); }
-
+        for (const button of uiButtons) {
+            drawButton(button);
+        }
         return;
     }
 
     if (gameState === "victory") {
+        drawEmbers(4);
 
-        ctx.fillStyle = "#ffd75a";
-        ctx.font = "bold 60px Georgia, serif";
-        ctx.fillText("VICTORY", VIEW_WIDTH / 2, 120);
+        drawText(ctx, "VICTORY", VIEW_WIDTH / 2, 92, 34, COLORS.gold, "center");
+        drawText(ctx, "The Pale King is dead. The darkness fades.", VIEW_WIDTH / 2, 126, 9, "#ddd", "center");
 
-        ctx.fillStyle = "#dddddd";
-        ctx.font = "18px Arial";
-        ctx.fillText("The Pale King is dead. The darkness fades.", VIEW_WIDTH / 2, 155);
-
-        ctx.fillStyle = "#ffd75a";
-        ctx.font = "bold 24px Arial";
-        ctx.fillText("Score " + stats.score, VIEW_WIDTH / 2, 195);
-
-        ctx.fillStyle = "#bbbbbb";
-        ctx.font = "15px Arial";
-        ctx.fillText(
-            "Waves " + Math.max(1, wave) + " · Kills " + stats.kills +
-            " · Survived " + stats.survived.toFixed(1) + "s",
-            VIEW_WIDTH / 2,
-            220
-        );
+        drawPanel(ctx, VIEW_WIDTH / 2 - 190, 142, 380, 96);
+        drawStatsBreakdown();
 
         if (newHighScore) {
-            ctx.fillStyle = "#ffd75a";
-            ctx.font = "bold 22px Arial";
-            ctx.fillText("★ NEW HIGH SCORE ★", VIEW_WIDTH / 2, 250);
+            drawText(ctx, "NEW HIGH SCORE!", VIEW_WIDTH / 2, 258, 12, COLORS.gold, "center");
         }
 
-        for (const button of uiButtons) { drawButton(button); }
+        for (const button of uiButtons) {
+            drawButton(button);
+        }
     }
+}
+
+// Shared run-stats breakdown used by game-over and victory.
+function drawStatsBreakdown() {
+    const cx = VIEW_WIDTH / 2;
+
+    drawText(ctx, "Score " + stats.score + " · Wave " + Math.max(1, wave), cx, 128, 9, COLORS.gold, "center");
+    drawText(ctx, "Survived " + stats.survived.toFixed(1) + "s · Damage dealt " + stats.damageDealt, cx, 144, 7, "#ddd", "center");
+    drawText(ctx, "Hits taken " + stats.hitsTaken + " · Kills " + stats.kills, cx, 158, 7, "#ddd", "center");
+
+    // Kills by type (most lethal first)
+    const byType = stats.byType || {};
+    const rows = Object.keys(byType)
+        .map((type) => ({ type: type, count: byType[type] }))
+        .filter((r) => r.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    if (rows.length === 0) {
+        return;
+    }
+
+    const step = 14;
+    const startY = 176;
+    rows.forEach(function (row, i) {
+        const name = (ENEMY_TYPES[row.type] && ENEMY_TYPES[row.type].name) || row.type;
+        ctx.textAlign = "left";
+        drawText(ctx, name, cx - 150, startY + i * step, 7, "#bbb", "left");
+        ctx.textAlign = "right";
+        drawText(ctx, String(row.count), cx + 150, startY + i * step, 7, COLORS.gold, "right");
+    });
 }
 
 // ======================

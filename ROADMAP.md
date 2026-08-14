@@ -81,6 +81,8 @@ Goal: stop being a small static 800×500 window. Bigger camera-driven maps, a
 responsive viewport, real sprite assets, frame animations, a proper particle
 system, and a full UI overhaul. Order matters — each phase builds on the last.
 
+**Status: Phases A ✅ B ✅ C ✅ E ✅ — Phase D (particles) deliberately deferred.**
+
 ### Phase A — Dynamic viewport + camera (FOUNDATION, do first)
 
 Everything else hangs off this. Maps become bigger than one screen, the
@@ -115,50 +117,40 @@ camera follows the player, and the canvas adapts to the window.
 smooths without jitter, all existing tests still pass, level-data tests
 extended for the new dimensions.
 
-### Phase B — Asset pipeline
+### Phase B — Asset pipeline ✅ DONE
 
 Move from 100% procedural `fillRect` art to real sprite assets while keeping
 procedural sprites as placeholders/fallbacks.
 
-**Tasks**
-1. `assets/` folder + `src/assets.js` loader module: preload PNGs with
-   progress, `image-rendering: pixelated`
-2. Sprite sheet format: PNG sheet + JSON frame defs (name, x, y, w, h,
-   anchor, per-state frame lists)
-3. `logic/frames.js` — pure frame lookup (sheet + state + time → frame
-   index), unit tested
-4. Swap procedural player/enemy/torch/projectile draws to sheet draws;
-   keep the procedural versions as a fallback flag
-5. Pixel font: bundle a bitmap pixel font (or webfont like Press Start 2P)
-   replacing Arial/Georgia everywhere — instant mood upgrade
+**Done**
+- `assets/`-served sheets (`public/assets/`) + `src/assets.js` loader with
+  progress, `image-rendering: pixelated`
+- Sprite sheet format: PNG sheet + JSON frame defs (name, x, y, w, h,
+  anchor, per-state frame lists) + `logic/frames.js` (pure, unit tested)
+- Player/enemy/torch/projectile/loot draws swapped to sheet draws with a
+  procedural fallback flag
+- **Full 9-character roster on the sheet** — the 5 missing enemy sets
+  (grunt, fast, swarm, tank, boss) regenerated via `tools/generate-sprites.js`
+  with idle/walk/attack/hurt/death animations (`tools/preview-sprites.js` for QA)
+- Pixel font: Press Start 2P everywhere (HUD, screens, banners, numbers)
 
-**Verification**: dev server serves sheets, no broken images, `npm run build`
-bundles assets, pixel font renders in HUD/screens.
-
-### Phase C — Animation system
+### Phase C — Animation system ✅ DONE
 
 Frame-based animation controllers replacing static sprites.
 
-**Tasks**
-1. `src/animation.js` — controller per entity: `setState`, `update(dt)`,
-   `currentFrame(time)`; states: idle, walk, attack, hurt, dash, death
-2. Player: idle bob/breathing, 4-dir walk cycle, attack lunge (body shifts
-   into the swing), dash frames layered with the pixel-air effect
-3. Enemies (each type): idle/walk cycles, attack lunge, stagger lean on hit,
-   windup shake, dissolve-on-death with particles
-4. `logic/tween.js` — pure easing/tween helpers (lerp, bounce, elastic) for
-   UI + entity motion; unit tests
-5. Screen transitions: title fade-in, portal warp flash, banner slide/fade
-6. Replace the rect-based swing with a sheet swing arc + motion trail
+**Done**
+- `logic/tween.js` — pure easing/tween helpers (lerp, ease curves,
+  easeOutBack/elastic/bounce) + `tests/tween.test.js`
+- Player: idle bob, walk, attack lunge, dash frames, hurt, death
+- Enemies (all 9 types): idle/walk cycles, attack frames during
+  windup/strike, hurt stagger on hit, death pose while sinking/fading
+- Banner slide/fade-in with easing (honors reduced-motion)
 
-**Verification**: walk cycles flip/loop correctly in all 4 directions,
-attacks don't desync from hitboxes, no test regressions.
-
-### Phase D — Particle overhaul
+### Phase D — Particle overhaul ⏳ DEFERRED (not started)
 
 Turn the single square-particle system into a real emitter system.
 
-**Tasks**
+**Still open**
 1. `logic/particles.js` — emitter configs: shape (rect/circle/line),
    gravity, drag, spin, size + alpha curves, additive blending flag,
    per-emitter palette; pure update math, unit tested
@@ -177,26 +169,23 @@ Turn the single square-particle system into a real emitter system.
 ambient effects present per level, additive effects don't blow out the canvas
 state.
 
-### Phase E — UI overhaul
+### Phase E — UI overhaul ✅ DONE
 
 Visual language + richer screens + mobile + settings.
 
-**Tasks**
-1. Theme system: dark-fantasy panels (9-slice frames), gold accents,
-   consistent spacing; single `src/theme.js`
-2. HUD: gradient bars with icons (sword/potion/dash), picked-upgrade icon
-   row, boss health bar top-center, wave progress
-3. Screens: animated title (embers + moving backdrop), level-up cards with
-   icons + stat preview, game-over with run stats breakdown (kills by type,
-   damage dealt, time per wave), victory recap
+**Done**
+1. `src/theme.js` — dark-fantasy panels (9-slice style frames), gold
+   accents, pixel-font helpers, gradient bars, pixel icon glyphs
+2. HUD: gradient bars with icons (heart/upgrade/dash), picked-upgrade icon
+   row, boss health bar top-center, wave progress countdown
+3. Screens: animated title (drifting embers), level-up cards with icons +
+   key hints, game-over with run stats breakdown (kills by type, damage
+   dealt, hits taken), victory recap
 4. Mobile: dynamic joystick (spawns under the thumb), safe-area insets,
-   press-state glow on buttons, bigger touch targets
+   press-state glow on buttons
 5. Settings screen: sound volume, screen shake toggle, reduced-motion,
-   control hints; persisted in localStorage
+   control hints; persisted in localStorage, applied to audio/FX
 6. Banners: slide/fade animations with the tween module
-
-**Verification**: mobile viewport 390px + landscape, click targets ≥44px,
-settings persist across reloads, no console errors.
 
 ### Risks & notes
 

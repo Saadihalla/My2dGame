@@ -5,6 +5,15 @@
 export const AudioFX = {
     ctx: null,
     master: null,
+    volume: 0.5,
+
+    // Called from settings; safe before the AudioContext exists.
+    setVolume: function (value) {
+        this.volume = Math.max(0, Math.min(1, value));
+        if (this.master) {
+            this.master.gain.value = this.volume;
+        }
+    },
 
     ensure: function () {
         if (!this.ctx) {
@@ -14,7 +23,7 @@ export const AudioFX = {
             }
             this.ctx = new AudioContextClass();
             this.master = this.ctx.createGain();
-            this.master.gain.value = 0.5;
+            this.master.gain.value = this.volume;
             this.master.connect(this.ctx.destination);
         }
         if (this.ctx.state === "suspended") {

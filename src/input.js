@@ -186,12 +186,14 @@ const joystickKnob = document.getElementById("joystickKnob");
 const attackButton = document.getElementById("attackButton");
 const dashButton = document.getElementById("dashButton");
 const pauseButton = document.getElementById("pauseButton");
+const controlsWrap = document.querySelector(".canvas-wrapper");
 
 let joystickActive = false;
 
 function resetJoystick() {
     joystickActive = false;
 
+    joystick.style.display = "none";
     joystickKnob.style.left = "31px";
     joystickKnob.style.top = "31px";
 
@@ -246,25 +248,48 @@ function moveJoystick(event) {
     }
 }
 
-joystick.addEventListener("pointerdown", function (event) {
-    joystickActive = true;
-    joystick.setPointerCapture(event.pointerId);
-    moveJoystick(event);
+// Dynamic joystick: it appears under the thumb wherever the player
+// touches the left ~60% of the screen and disappears on release.
+
+controlsWrap.addEventListener("pointerdown", function (event) {
+    if (event.pointerType !== "touch") {
+        return;
+    }
+
+    // Don't hijack taps aimed at the buttons.
+    if (event.target.closest && event.target.closest("button")) {
+        return;
+    }
+
+    // Continuing a drag on the joystick itself just re-anchors.
+    if (event.target === joystick) {
+        joystickActive = true;
+        moveJoystick(event);
+        return;
+    }
+
+    if (!joystickActive && event.clientX < window.innerWidth * 0.6) {
+        event.preventDefault();
+        controlsWrap.setPointerCapture(event.pointerId);
+
+        const size = 120;
+        joystick.style.display = "block";
+        joystick.style.left = (event.clientX - size / 2) + "px";
+        joystick.style.top = (event.clientY - size / 2) + "px";
+
+        joystickActive = true;
+        moveJoystick(event);
+    }
 });
 
-joystick.addEventListener("pointermove", function (event) {
+controlsWrap.addEventListener("pointermove", function (event) {
     if (joystickActive) {
         moveJoystick(event);
     }
 });
 
-joystick.addEventListener("pointerup", function () {
-    resetJoystick();
-});
-
-joystick.addEventListener("pointercancel", function () {
-    resetJoystick();
-});
+controlsWrap.addEventListener("pointerup", resetJoystick);
+controlsWrap.addEventListener("pointercancel", resetJoystick);
 
 attackButton.addEventListener("pointerdown", function (event) {
     event.preventDefault();

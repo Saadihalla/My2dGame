@@ -1,0 +1,1353 @@
+{
+  "meta": {
+    "image": "spritesheet.png",
+    "size": {
+      "w": 1024,
+      "h": 1024
+    }
+  },
+  "frames": {
+    "warden_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 8,
+        "w": 47,
+        "h": 80
+      },
+      "anchor": {
+        "x": 23.5,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_idle_1": {
+      "frame": {
+        "x": 63,
+        "y": 8,
+        "w": 48,
+        "h": 80
+      },
+      "anchor": {
+        "x": 24,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_walk_0": {
+      "frame": {
+        "x": 119,
+        "y": 8,
+        "w": 56,
+        "h": 80
+      },
+      "anchor": {
+        "x": 28,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_walk_1": {
+      "frame": {
+        "x": 183,
+        "y": 8,
+        "w": 53,
+        "h": 80
+      },
+      "anchor": {
+        "x": 26.5,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_attack_0": {
+      "frame": {
+        "x": 244,
+        "y": 8,
+        "w": 55,
+        "h": 80
+      },
+      "anchor": {
+        "x": 27.5,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_attack_1": {
+      "frame": {
+        "x": 307,
+        "y": 8,
+        "w": 57,
+        "h": 80
+      },
+      "anchor": {
+        "x": 28.5,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_hurt_0": {
+      "frame": {
+        "x": 372,
+        "y": 8,
+        "w": 56,
+        "h": 80
+      },
+      "anchor": {
+        "x": 28,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "warden_death_0": {
+      "frame": {
+        "x": 436,
+        "y": 8,
+        "w": 54,
+        "h": 80
+      },
+      "anchor": {
+        "x": 27,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "player_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 100,
+        "w": 51,
+        "h": 65
+      },
+      "anchor": {
+        "x": 25.5,
+        "y": 32.5
+      },
+      "scale": 0.7
+    },
+    "player_idle_1": {
+      "frame": {
+        "x": 67,
+        "y": 100,
+        "w": 51,
+        "h": 65
+      },
+      "anchor": {
+        "x": 25.5,
+        "y": 32.5
+      },
+      "scale": 0.7
+    },
+    "player_walk_0": {
+      "frame": {
+        "x": 126,
+        "y": 100,
+        "w": 52,
+        "h": 62
+      },
+      "anchor": {
+        "x": 26,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "player_walk_1": {
+      "frame": {
+        "x": 186,
+        "y": 100,
+        "w": 65,
+        "h": 62
+      },
+      "anchor": {
+        "x": 32.5,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "player_attack_0": {
+      "frame": {
+        "x": 259,
+        "y": 100,
+        "w": 62,
+        "h": 62
+      },
+      "anchor": {
+        "x": 31,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "player_attack_1": {
+      "frame": {
+        "x": 329,
+        "y": 100,
+        "w": 54,
+        "h": 62
+      },
+      "anchor": {
+        "x": 27,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "player_hurt_0": {
+      "frame": {
+        "x": 391,
+        "y": 100,
+        "w": 55,
+        "h": 62
+      },
+      "anchor": {
+        "x": 27.5,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "player_death_0": {
+      "frame": {
+        "x": 454,
+        "y": 100,
+        "w": 53,
+        "h": 62
+      },
+      "anchor": {
+        "x": 26.5,
+        "y": 31
+      },
+      "scale": 0.7
+    },
+    "exploder_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 177,
+        "w": 43,
+        "h": 84
+      },
+      "anchor": {
+        "x": 21.5,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "exploder_idle_1": {
+      "frame": {
+        "x": 59,
+        "y": 177,
+        "w": 43,
+        "h": 84
+      },
+      "anchor": {
+        "x": 21.5,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "exploder_walk_0": {
+      "frame": {
+        "x": 110,
+        "y": 177,
+        "w": 44,
+        "h": 84
+      },
+      "anchor": {
+        "x": 22,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "exploder_walk_1": {
+      "frame": {
+        "x": 162,
+        "y": 177,
+        "w": 45,
+        "h": 84
+      },
+      "anchor": {
+        "x": 22.5,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "exploder_attack_0": {
+      "frame": {
+        "x": 215,
+        "y": 177,
+        "w": 43,
+        "h": 84
+      },
+      "anchor": {
+        "x": 21.5,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "exploder_attack_1": {
+      "frame": {
+        "x": 266,
+        "y": 177,
+        "w": 57,
+        "h": 85
+      },
+      "anchor": {
+        "x": 28.5,
+        "y": 42.5
+      },
+      "scale": 0.75
+    },
+    "exploder_hurt_0": {
+      "frame": {
+        "x": 331,
+        "y": 177,
+        "w": 56,
+        "h": 85
+      },
+      "anchor": {
+        "x": 28,
+        "y": 42.5
+      },
+      "scale": 0.75
+    },
+    "exploder_death_0": {
+      "frame": {
+        "x": 395,
+        "y": 177,
+        "w": 52,
+        "h": 84
+      },
+      "anchor": {
+        "x": 26,
+        "y": 42
+      },
+      "scale": 0.75
+    },
+    "caster_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 274,
+        "w": 58,
+        "h": 90
+      },
+      "anchor": {
+        "x": 29,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "caster_idle_1": {
+      "frame": {
+        "x": 74,
+        "y": 274,
+        "w": 58,
+        "h": 90
+      },
+      "anchor": {
+        "x": 29,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "caster_walk_0": {
+      "frame": {
+        "x": 140,
+        "y": 274,
+        "w": 58,
+        "h": 90
+      },
+      "anchor": {
+        "x": 29,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "caster_walk_1": {
+      "frame": {
+        "x": 206,
+        "y": 274,
+        "w": 61,
+        "h": 90
+      },
+      "anchor": {
+        "x": 30.5,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "caster_attack_0": {
+      "frame": {
+        "x": 275,
+        "y": 274,
+        "w": 62,
+        "h": 89
+      },
+      "anchor": {
+        "x": 31,
+        "y": 44.5
+      },
+      "scale": 0.55
+    },
+    "caster_attack_1": {
+      "frame": {
+        "x": 345,
+        "y": 274,
+        "w": 68,
+        "h": 89
+      },
+      "anchor": {
+        "x": 34,
+        "y": 44.5
+      },
+      "scale": 0.55
+    },
+    "caster_hurt_0": {
+      "frame": {
+        "x": 421,
+        "y": 274,
+        "w": 65,
+        "h": 90
+      },
+      "anchor": {
+        "x": 32.5,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "caster_death_0": {
+      "frame": {
+        "x": 494,
+        "y": 274,
+        "w": 63,
+        "h": 90
+      },
+      "anchor": {
+        "x": 31.5,
+        "y": 45
+      },
+      "scale": 0.55
+    },
+    "grunt_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_idle_1": {
+      "frame": {
+        "x": 48,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_walk_0": {
+      "frame": {
+        "x": 88,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_walk_1": {
+      "frame": {
+        "x": 128,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_attack_0": {
+      "frame": {
+        "x": 168,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_attack_1": {
+      "frame": {
+        "x": 208,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_hurt_0": {
+      "frame": {
+        "x": 248,
+        "y": 376,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "grunt_death_0": {
+      "frame": {
+        "x": 288,
+        "y": 376,
+        "w": 44,
+        "h": 32
+      },
+      "anchor": {
+        "x": 22,
+        "y": 28
+      },
+      "scale": 1
+    },
+    "fast_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_idle_1": {
+      "frame": {
+        "x": 48,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_walk_0": {
+      "frame": {
+        "x": 88,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_walk_1": {
+      "frame": {
+        "x": 128,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_attack_0": {
+      "frame": {
+        "x": 168,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_attack_1": {
+      "frame": {
+        "x": 208,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_hurt_0": {
+      "frame": {
+        "x": 248,
+        "y": 432,
+        "w": 32,
+        "h": 44
+      },
+      "anchor": {
+        "x": 16,
+        "y": 40
+      },
+      "scale": 1
+    },
+    "fast_death_0": {
+      "frame": {
+        "x": 288,
+        "y": 432,
+        "w": 44,
+        "h": 32
+      },
+      "anchor": {
+        "x": 22,
+        "y": 28
+      },
+      "scale": 1
+    },
+    "swarm_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_idle_1": {
+      "frame": {
+        "x": 40,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_walk_0": {
+      "frame": {
+        "x": 72,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_walk_1": {
+      "frame": {
+        "x": 104,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_attack_0": {
+      "frame": {
+        "x": 136,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_attack_1": {
+      "frame": {
+        "x": 168,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_hurt_0": {
+      "frame": {
+        "x": 200,
+        "y": 488,
+        "w": 24,
+        "h": 28
+      },
+      "anchor": {
+        "x": 12,
+        "y": 24
+      },
+      "scale": 1
+    },
+    "swarm_death_0": {
+      "frame": {
+        "x": 232,
+        "y": 488,
+        "w": 28,
+        "h": 24
+      },
+      "anchor": {
+        "x": 14,
+        "y": 20
+      },
+      "scale": 1
+    },
+    "tank_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_idle_1": {
+      "frame": {
+        "x": 56,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_walk_0": {
+      "frame": {
+        "x": 104,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_walk_1": {
+      "frame": {
+        "x": 152,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_attack_0": {
+      "frame": {
+        "x": 200,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_attack_1": {
+      "frame": {
+        "x": 248,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_hurt_0": {
+      "frame": {
+        "x": 296,
+        "y": 528,
+        "w": 40,
+        "h": 57.5
+      },
+      "anchor": {
+        "x": 20,
+        "y": 53.5
+      },
+      "scale": 1
+    },
+    "tank_death_0": {
+      "frame": {
+        "x": 344,
+        "y": 528,
+        "w": 57.5,
+        "h": 40
+      },
+      "anchor": {
+        "x": 28.75,
+        "y": 36
+      },
+      "scale": 1
+    },
+    "boss_idle_0": {
+      "frame": {
+        "x": 8,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_idle_1": {
+      "frame": {
+        "x": 76,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_walk_0": {
+      "frame": {
+        "x": 144,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_walk_1": {
+      "frame": {
+        "x": 212,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_attack_0": {
+      "frame": {
+        "x": 280,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_attack_1": {
+      "frame": {
+        "x": 348,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_hurt_0": {
+      "frame": {
+        "x": 416,
+        "y": 597.5,
+        "w": 60,
+        "h": 72
+      },
+      "anchor": {
+        "x": 30,
+        "y": 68
+      },
+      "scale": 1
+    },
+    "boss_death_0": {
+      "frame": {
+        "x": 484,
+        "y": 597.5,
+        "w": 72,
+        "h": 60
+      },
+      "anchor": {
+        "x": 36,
+        "y": 56
+      },
+      "scale": 1
+    },
+    "potion_0": {
+      "frame": {
+        "x": 8,
+        "y": 681.5,
+        "w": 50,
+        "h": 45
+      },
+      "anchor": {
+        "x": 25,
+        "y": 22.5
+      },
+      "scale": 0.25
+    },
+    "upgrade_0": {
+      "frame": {
+        "x": 8,
+        "y": 738.5,
+        "w": 42,
+        "h": 42
+      },
+      "anchor": {
+        "x": 21,
+        "y": 21
+      },
+      "scale": 0.5
+    }
+  },
+  "animations": {
+    "warden": {
+      "idle": {
+        "frames": [
+          "warden_idle_0",
+          "warden_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "warden_walk_0",
+          "warden_walk_1"
+        ],
+        "frameRate": 4,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "warden_attack_0",
+          "warden_attack_1"
+        ],
+        "frameRate": 5,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "warden_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "warden_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "player": {
+      "idle": {
+        "frames": [
+          "player_idle_0",
+          "player_idle_1"
+        ],
+        "frameRate": 4,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "player_walk_0",
+          "player_walk_1"
+        ],
+        "frameRate": 8,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "player_attack_0",
+          "player_attack_1"
+        ],
+        "frameRate": 7,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "player_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "player_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "exploder": {
+      "idle": {
+        "frames": [
+          "exploder_idle_0",
+          "exploder_idle_1"
+        ],
+        "frameRate": 4,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "exploder_walk_0",
+          "exploder_walk_1"
+        ],
+        "frameRate": 8,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "exploder_attack_0",
+          "exploder_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "exploder_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "exploder_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "caster": {
+      "idle": {
+        "frames": [
+          "caster_idle_0",
+          "caster_idle_1"
+        ],
+        "frameRate": 4,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "caster_walk_0",
+          "caster_walk_1"
+        ],
+        "frameRate": 5,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "caster_attack_0",
+          "caster_attack_1"
+        ],
+        "frameRate": 4,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "caster_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "caster_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "grunt": {
+      "idle": {
+        "frames": [
+          "grunt_idle_0",
+          "grunt_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "grunt_walk_0",
+          "grunt_walk_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "grunt_attack_0",
+          "grunt_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "grunt_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "grunt_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "fast": {
+      "idle": {
+        "frames": [
+          "fast_idle_0",
+          "fast_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "fast_walk_0",
+          "fast_walk_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "fast_attack_0",
+          "fast_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "fast_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "fast_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "swarm": {
+      "idle": {
+        "frames": [
+          "swarm_idle_0",
+          "swarm_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "swarm_walk_0",
+          "swarm_walk_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "swarm_attack_0",
+          "swarm_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "swarm_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "swarm_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "tank": {
+      "idle": {
+        "frames": [
+          "tank_idle_0",
+          "tank_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "tank_walk_0",
+          "tank_walk_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "tank_attack_0",
+          "tank_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "tank_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "tank_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "boss": {
+      "idle": {
+        "frames": [
+          "boss_idle_0",
+          "boss_idle_1"
+        ],
+        "frameRate": 3,
+        "loop": true
+      },
+      "walk": {
+        "frames": [
+          "boss_walk_0",
+          "boss_walk_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "attack": {
+        "frames": [
+          "boss_attack_0",
+          "boss_attack_1"
+        ],
+        "frameRate": 6,
+        "loop": true
+      },
+      "hurt": {
+        "frames": [
+          "boss_hurt_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      },
+      "death": {
+        "frames": [
+          "boss_death_0"
+        ],
+        "frameRate": 1,
+        "loop": false
+      }
+    },
+    "potion": {
+      "idle": {
+        "frames": [
+          "potion_0"
+        ],
+        "frameRate": 1,
+        "loop": true
+      }
+    },
+    "upgrade": {
+      "idle": {
+        "frames": [
+          "upgrade_0"
+        ],
+        "frameRate": 1,
+        "loop": true
+      }
+    }
+  }
+}

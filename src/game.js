@@ -14,6 +14,8 @@ import {
     resizeCanvas
 } from "./config.js";
 
+import { Assets } from "./assets.js";
+
 import {
     gameTime,
     gameState,
@@ -73,6 +75,7 @@ import {
     allEnemiesDead
 } from "./entities.js";
 import { drawHUD, drawOverlays } from "./ui.js";
+import { drawText } from "./theme.js";
 import {
     startGame,
     restartGame,
@@ -252,9 +255,7 @@ function drawPortal(gameTime) {
     ctx.restore();
 
     ctx.fillStyle = "#fff3c4";
-    ctx.font = "13px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("ENTER PORTAL", px, py + 44);
+    drawText(ctx, "ENTER PORTAL", px, py + 44, 8, "#fff3c4", "center");
 }
 
 function draw(alpha) {
@@ -308,6 +309,26 @@ function draw(alpha) {
     drawHUD();
     drawBanners();
     drawOverlays();
+
+    // Asset loading overlay (progress bar, screen space)
+
+    if (!Assets.loaded) {
+        const pct = Math.round(Assets.progress * 100);
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+
+        ctx.fillStyle = "#ffd75a";
+        ctx.fillRect(VIEW_WIDTH / 2 - 120, VIEW_HEIGHT / 2 - 4, 240 * Assets.progress, 8);
+        ctx.strokeStyle = "#ffd75a";
+        ctx.strokeRect(VIEW_WIDTH / 2 - 120, VIEW_HEIGHT / 2 - 4, 240, 8);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "10px 'Press Start 2P', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("LOADING " + pct + "%", VIEW_WIDTH / 2, VIEW_HEIGHT / 2 - 20);
+        ctx.textAlign = "left";
+    }
 }
 
 // ======================
@@ -346,6 +367,11 @@ function gameLoop(timestamp) {
 
 buildLevel(0);
 goTitle();
+
+// Kick off the asset pipeline; the game runs in procedural fallback until
+// the sheet loads (and validates). Progress is shown by the loading overlay.
+
+Assets.load();
 
 window.addEventListener("resize", function () {
     resizeCanvas();

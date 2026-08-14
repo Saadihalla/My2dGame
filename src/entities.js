@@ -2,6 +2,9 @@
 // ENTITIES (player, enemies, loot)
 // ======================
 
+import { Assets } from "./assets.js";
+import { getAnimationFrame } from "./logic/frames.js";
+
 import {
     ctx,
     PLAYER_SPEED,
@@ -69,7 +72,7 @@ export const player = {
     pendingLevels: 0
 };
 
-const ENEMY_TYPES = {
+export const ENEMY_TYPES = {
     grunt: {
         name: "Grunt",
         hp: 100, speed: 110, damage: 10,
@@ -191,6 +194,7 @@ export function spawnEnemy(type, x, y, hpScale) {
         stateTimer: 0,
         cooldown: 0,
         flash: 0,
+        hurtTimer: 0,
         kx: 0,
         ky: 0,
         deadTimer: 0,
@@ -344,6 +348,27 @@ export function updatePlayer(dt) {
     }
 
     resolveEnemyOverlaps();
+
+    // Update animation state
+    let nextState = "idle";
+    if (player.x !== player.prevX || player.y !== player.prevY) {
+        nextState = "walk";
+    }
+    if (player.attackTimer > 0) {
+        nextState = "attack";
+    }
+    if (player.health <= 0) {
+        nextState = "death";
+    } else if (player.invuln > 0 && player.dashTimer <= 0) {
+        nextState = "hurt";
+    }
+
+    if (player.animState !== nextState) {
+        player.animState = nextState;
+        player.animTime = 0;
+    } else {
+        player.animTime = (player.animTime || 0) + dt;
+    }
 }
 
 // The player can shove enemies out of the way instead of being
@@ -437,6 +462,8 @@ function damageEnemy(e) {
 
     e.health -= damage;
     e.flash = 0.12;
+    e.hurtTimer = 0.22;
+    stats.damageDealt += damage;
 
     const knockX = player.x + player.width / 2 < e.x + e.width / 2 ? 1 : -1;
     const knockY = player.y + player.height / 2 < e.y + e.height / 2 ? 1 : -1;
@@ -471,7 +498,10 @@ function damageEnemy(e) {
 function killEnemy(e) {
     e.health = 0;
     e.flash = 0;
+    e.hurtTimer = 0;
     e.deadTimer = DEATH_FADE;
+    e.animState = "death";
+    e.animTime = 0;
 
     addHitStop(0.09);
     addShake(8);
@@ -487,6 +517,7 @@ function killEnemy(e) {
 
     addScore(e.score);
     stats.kills++;
+    stats.byType[e.type] = (stats.byType[e.type] || 0) + 1;
     gainXP(e.xp);
 
     if (e.type === "boss") {
@@ -659,6 +690,26 @@ export function drawProjectiles(gameTime) {
     for (const p of projectiles) {
         const pulse = 0.5 + 0.5 * Math.sin(gameTime * 14);
 
+        if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+            const frameData = getAnimationFrame(Assets.spritesheetDef, "projectile", "idle", gameTime);
+
+            if (frameData) {
+                const frame = frameData.frame;
+                const anchor = frameData.anchor;
+
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                ctx.globalAlpha = 0.65 + pulse * 0.35;
+                ctx.drawImage(
+                    Assets.spritesheet,
+                    frame.x, frame.y, frame.w, frame.h,
+                    p.x - anchor.x, p.y - anchor.y, frame.w, frame.h
+                );
+                ctx.restore();
+                continue;
+            }
+        }
+
         ctx.globalAlpha = 0.35 + pulse * 0.3;
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
@@ -720,6 +771,9 @@ export function updateEnemies(dt) {
         if (e.flash > 0) {
             e.flash -= dt;
         }
+        if (e.hurtTimer > 0) {
+            e.hurtTimer -= dt;
+        }
         if (e.cooldown > 0) {
             e.cooldown -= dt;
         }
@@ -768,6 +822,26 @@ export function updateEnemies(dt) {
         }
 
         updateEnemyState(e, dx, dy, dist, dt);
+
+        // Update animation state: hurt flashes beat everything, then
+        // windup/strike play the attack animation, then walk/idle.
+        const isMoving = Math.hypot(e.x - e.prevX, e.y - e.prevY) > 0.01;
+        const striking = e.state === "windup" || e.state === "strike";
+        let nextState = isMoving ? "walk" : "idle";
+
+        if (striking) {
+            nextState = "attack";
+        }
+        if (e.hurtTimer > 0) {
+            nextState = "hurt";
+        }
+
+        if (e.animState !== nextState) {
+            e.animState = nextState;
+            e.animTime = 0;
+        } else {
+            e.animTime = (e.animTime || 0) + dt;
+        }
     }
 
     // Remove fully faded corpses (prevents dead enemies from
@@ -958,6 +1032,38 @@ function drawSwordSwing(gctx, x, y) {
 // so it can be re-rendered through the pixelation pass while dashing.
 
 function drawPlayerSprite(gctx, x, y) {
+    if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+        const animState = player.animState || "idle";
+        const animTime = player.animTime || 0;
+        const frameData = getAnimationFrame(Assets.spritesheetDef, "player", animState, animTime);
+
+        if (frameData) {
+            const frame = frameData.frame;
+            const anchor = frameData.anchor;
+
+            gctx.save();
+            if (player.direction === "left") {
+                gctx.translate(x + player.width / 2, 0);
+                gctx.scale(-1, 1);
+                gctx.translate(-(x + player.width / 2), 0);
+            }
+
+            gctx.imageSmoothingEnabled = false;
+            const s = frameData.scale || 1;
+            const dx = x + player.width / 2 - anchor.x * s;
+            const dy = y + player.height / 2 - anchor.y * s;
+
+            gctx.drawImage(
+                Assets.spritesheet,
+                frame.x, frame.y, frame.w, frame.h,
+                dx, dy, frame.w * s, frame.h * s
+            );
+
+            gctx.restore();
+            return;
+        }
+    }
+
     const swinging = player.attackTimer > 0;
 
     gctx.fillStyle = "#151515";
@@ -1120,6 +1226,33 @@ export function drawPlayer(gameTime, alpha) {
 function drawEnemyBody(e, ox, oy) {
     const x = e.x + (ox || 0);
     const y = e.y + (oy || 0);
+
+    if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+        const animState = e.animState || "idle";
+        const animTime = e.animTime || 0;
+        const frameData = getAnimationFrame(Assets.spritesheetDef, e.type, animState, animTime);
+
+        if (frameData) {
+            const frame = frameData.frame;
+            const anchor = frameData.anchor;
+
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+
+            const s = frameData.scale || 1;
+            const dx = x + e.width / 2 - anchor.x * s;
+            const dy = y + e.height / 2 - anchor.y * s;
+
+            ctx.drawImage(
+                Assets.spritesheet,
+                frame.x, frame.y, frame.w, frame.h,
+                dx, dy, frame.w * s, frame.h * s
+            );
+
+            ctx.restore();
+            return;
+        }
+    }
 
     if (e.type === "grunt") {
 
@@ -1472,6 +1605,30 @@ export function drawEnemies(gameTime, alpha) {
 export function drawLoot(gameTime) {
     for (const item of loot) {
         const bob = Math.sin(gameTime * 5 + item.x) * 2;
+
+        if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+            const frameData = getAnimationFrame(Assets.spritesheetDef, item.kind, "idle", gameTime);
+            if (frameData) {
+                const frame = frameData.frame;
+                const anchor = frameData.anchor;
+
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+
+                const s = frameData.scale || 1;
+                const dx = item.x - anchor.x * s;
+                const dy = item.y + bob - anchor.y * s;
+
+                ctx.drawImage(
+                    Assets.spritesheet,
+                    frame.x, frame.y, frame.w, frame.h,
+                    dx, dy, frame.w * s, frame.h * s
+                );
+
+                ctx.restore();
+                continue;
+            }
+        }
 
         if (item.kind === "potion") {
             ctx.fillStyle = "#c62828";

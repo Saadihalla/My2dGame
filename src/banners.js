@@ -1,8 +1,11 @@
 // ======================
 // BANNERS (wave announcements, level-ups)
+// Slide/fade in with easing, fade out. Honors reduced-motion.
 // ======================
 
 import { ctx, VIEW_WIDTH } from "./config.js";
+import { drawPanel, drawText, Settings } from "./theme.js";
+import { tweenProgress, easeOutBack } from "./logic/tween.js";
 
 let banners = [];
 
@@ -11,7 +14,9 @@ export function showBanner(text, sub, duration) {
         text: text,
         sub: sub || "",
         timer: duration || 2.5,
-        max: duration || 2.5
+        max: duration || 2.5,
+        slide: 0,
+        active: true
     });
 
     if (banners.length > 3) {
@@ -21,9 +26,11 @@ export function showBanner(text, sub, duration) {
 
 export function updateBanners(dt) {
     for (let i = banners.length - 1; i >= 0; i--) {
-        banners[i].timer -= dt;
+        const banner = banners[i];
+        banner.timer -= dt;
+        banner.slide += dt;
 
-        if (banners[i].timer <= 0) {
+        if (banner.timer <= 0) {
             banners.splice(i, 1);
         }
     }
@@ -37,24 +44,25 @@ export function drawBanners() {
     let y = 96;
 
     for (const banner of banners) {
-        const alpha = Math.min(1, banner.timer / 0.4);
+        const fadeIn = tweenProgress(banner.slide, 0.35);
+        const fadeOut = Math.min(1, banner.timer / 0.4);
 
-        ctx.globalAlpha = alpha;
+        const eased = Settings.reducedMotion ? 1 : easeOutBack(fadeIn);
+        const offset = (1 - eased) * -46;
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 34px Georgia, serif";
-        ctx.textAlign = "center";
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, fadeIn) * fadeOut;
 
-        ctx.fillText(banner.text, VIEW_WIDTH / 2, y);
+        drawPanel(ctx, VIEW_WIDTH / 2 - 170, y - 34 + offset, 340, 54);
+
+        drawText(ctx, banner.text, VIEW_WIDTH / 2, y + offset, 15, "#ffffff", "center");
 
         if (banner.sub) {
-            ctx.fillStyle = "#dddddd";
-            ctx.font = "16px Arial";
-            ctx.fillText(banner.sub, VIEW_WIDTH / 2, y + 24);
+            drawText(ctx, banner.sub, VIEW_WIDTH / 2, y + 22 + offset, 8, "#dddddd", "center");
         }
 
-        y += banner.sub ? 62 : 46;
-    }
+        ctx.restore();
 
-    ctx.globalAlpha = 1;
+        y += banner.sub ? 74 : 58;
+    }
 }

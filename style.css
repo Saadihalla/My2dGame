@@ -16,7 +16,7 @@ body {
 
     color: white;
 
-    font-family: Arial, sans-serif;
+    font-family: 'Press Start 2P', monospace;
 
     display: flex;
     justify-content: center;
@@ -32,9 +32,9 @@ body {
 }
 
 h1 {
-    font-family: Georgia, serif;
+    font-family: 'Press Start 2P', monospace;
 
-    letter-spacing: 5px;
+    letter-spacing: 2px;
 
     margin-bottom: 20px;
 
@@ -148,8 +148,7 @@ canvas {
 #joystick {
     position: absolute;
 
-    left: 25px;
-    bottom: 10px;
+    display: none;
 
     width: 120px;
     height: 120px;
@@ -188,8 +187,8 @@ canvas {
 #dashButton {
     position: absolute;
 
-    right: 145px;
-    bottom: 35px;
+    right: calc(145px + env(safe-area-inset-right));
+    bottom: calc(35px + env(safe-area-inset-bottom));
 
     width: 68px;
     height: 68px;
@@ -215,6 +214,8 @@ canvas {
     transform: scale(0.9);
 
     background: rgba(30, 110, 80, 0.9);
+
+    box-shadow: 0 0 22px rgba(125, 255, 138, 0.8);
 }
 
 /* ATTACK */
@@ -222,8 +223,8 @@ canvas {
 #attackButton {
     position: absolute;
 
-    right: 30px;
-    bottom: 15px;
+    right: calc(30px + env(safe-area-inset-right));
+    bottom: calc(15px + env(safe-area-inset-bottom));
 
     width: 90px;
     height: 90px;
@@ -249,6 +250,8 @@ canvas {
     transform: scale(0.9);
 
     background: rgba(180, 30, 30, 0.9);
+
+    box-shadow: 0 0 22px rgba(255, 90, 90, 0.8);
 }
 
 .controls {

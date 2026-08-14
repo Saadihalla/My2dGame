@@ -3,6 +3,7 @@
 // ======================
 
 import { ctx, VIEW_WIDTH, VIEW_HEIGHT } from "./config.js";
+import { Settings, drawText } from "./theme.js";
 
 let particles = [];
 let numbers = [];
@@ -39,6 +40,9 @@ export function addNumber(x, y, text, color) {
 }
 
 export function addShake(amount) {
+    if (!Settings.shake) {
+        return;
+    }
     shake = Math.min(shake + amount, 18);
 }
 
@@ -119,10 +123,7 @@ export function drawParticles() {
 export function drawNumbers() {
     for (const n of numbers) {
         ctx.globalAlpha = Math.min(1, n.life / 0.45);
-        ctx.fillStyle = n.color;
-        ctx.font = "bold 15px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(n.text, n.x, n.y);
+        drawText(ctx, n.text, n.x, n.y, 8, n.color, "center");
     }
     ctx.globalAlpha = 1;
 }

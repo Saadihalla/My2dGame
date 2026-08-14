@@ -19,5 +19,16 @@ export default [
         rules: {
             "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
         }
+    },
+    {
+        files: ["tools/**/*.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: {
+                ...globals.node,
+                ...globals.es2022
+            }
+        }
     }
 ];

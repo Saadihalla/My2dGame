@@ -32,6 +32,7 @@ import {
 } from "./state.js";
 
 import { AudioFX } from "./audio.js";
+import { Settings } from "./theme.js";
 import { clearFX } from "./fx.js";
 import { clearBanners, showBanner } from "./banners.js";
 import { clearDashRequest } from "./input.js";
@@ -57,6 +58,7 @@ export function resetRun() {
     player.lifesteal = 0;
     player.cleaveMult = 1;
     player.pendingLevels = 0;
+    player.pickedUpgrades = [];
     resetPlayer();
 
     resetCamera();
@@ -85,6 +87,8 @@ export function resetRun() {
     stats.kills = 0;
     stats.hitsTaken = 0;
     stats.survived = 0;
+    stats.damageDealt = 0;
+    stats.byType = {};
 
     setNewHighScore(false);
 
@@ -109,7 +113,8 @@ export function goTitle() {
     loot.length = 0;
     projectiles.length = 0;
     setButtons([
-        makeButton("START", startGame, 250)
+        makeButton("START", startGame, 250),
+        makeButton("SETTINGS", openSettings, 320)
     ]);
 }
 
@@ -117,9 +122,10 @@ export function togglePause() {
     if (gameState === "playing") {
         setGameState("paused");
         setButtons([
-            makeButton("RESUME", togglePause, 220),
-            makeButton("RESTART", restartGame, 280),
-            makeButton("TITLE", goTitle, 340)
+            makeButton("RESUME", togglePause, 190),
+            makeButton("RESTART", restartGame, 250),
+            makeButton("SETTINGS", openSettings, 310),
+            makeButton("TITLE", goTitle, 370)
         ]);
     } else if (gameState === "paused") {
         setGameState("playing");
@@ -133,8 +139,8 @@ export function onPlayerDeath() {
     saveHighScore();
     AudioFX.kill();
     setButtons([
-        makeButton("PLAY AGAIN", restartGame, 250),
-        makeButton("TITLE", goTitle, 310)
+        makeButton("PLAY AGAIN", restartGame, 265),
+        makeButton("TITLE", goTitle, 325)
     ]);
 }
 
@@ -206,7 +212,8 @@ function makeUpgradeCards() {
             h,
             function () {
                 chooseUpgrade(index);
-            }
+            },
+            option.id
         );
     });
 }
@@ -247,6 +254,8 @@ export function chooseUpgrade(index) {
 }
 
 function applyUpgrade(id) {
+    player.pickedUpgrades.push(id);
+
     switch (id) {
         case "damage":
             player.damage += 6;
@@ -286,3 +295,60 @@ function applyUpgrade(id) {
             break;
     }
 }
+
+// ======================
+// SETTINGS
+// ======================
+
+let settingsFrom = "title";
+
+export function openSettings() {
+    settingsFrom = gameState === "paused" ? "paused" : "title";
+    setGameState("settings");
+    rebuildSettingsButtons();
+}
+
+function rebuildSettingsButtons() {
+    setButtons([
+        makeButton("VOLUME " + Math.round(Settings.volume * 100) + "%", cycleVolume, 170),
+        makeButton("SCREEN SHAKE: " + (Settings.shake ? "ON" : "OFF"), toggleShake, 230),
+        makeButton("REDUCED MOTION: " + (Settings.reducedMotion ? "ON" : "OFF"), toggleReducedMotion, 290),
+        makeButton("BACK", closeSettings, 350)
+    ]);
+}
+
+export function closeSettings() {
+    if (settingsFrom === "paused") {
+        setGameState("paused");
+        setButtons([
+            makeButton("RESUME", togglePause, 190),
+            makeButton("RESTART", restartGame, 250),
+            makeButton("SETTINGS", openSettings, 310),
+            makeButton("TITLE", goTitle, 370)
+        ]);
+    } else {
+        goTitle();
+    }
+}
+
+function cycleVolume() {
+    Settings.volume = ((Math.round(Settings.volume * 4) + 1) % 5) / 4;
+    Settings.save();
+    AudioFX.setVolume(Settings.volume);
+    rebuildSettingsButtons();
+}
+
+function toggleShake() {
+    Settings.shake = !Settings.shake;
+    Settings.save();
+    rebuildSettingsButtons();
+}
+
+function toggleReducedMotion() {
+    Settings.reducedMotion = !Settings.reducedMotion;
+    Settings.save();
+    rebuildSettingsButtons();
+}
+
+// Apply the persisted volume before the first audio context exists.
+AudioFX.setVolume(Settings.volume);
