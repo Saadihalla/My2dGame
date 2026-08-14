@@ -11,9 +11,29 @@ describe("waveEnemyList", () => {
         expect(list.filter((e) => e === "fast").length).toBeGreaterThan(0);
     });
 
-    it("wave 4 adds a tank", () => {
+    it("wave 2 adds swarm minions", () => {
+        const list = waveEnemyList(2);
+        expect(list.filter((e) => e === "swarm").length).toBeGreaterThan(0);
+    });
+
+    it("wave 3 adds a caster", () => {
+        const list = waveEnemyList(3);
+        expect(list.filter((e) => e === "caster").length).toBeGreaterThan(0);
+    });
+
+    it("wave 4 adds an exploder", () => {
         const list = waveEnemyList(4);
-        expect(list.filter((e) => e === "tank").length).toBeGreaterThan(0);
+        expect(list.filter((e) => e === "exploder").length).toBeGreaterThan(0);
+    });
+
+    it("wave 5 adds a warden", () => {
+        const list = waveEnemyList(5);
+        expect(list.filter((e) => e === "warden").length).toBeGreaterThan(0);
+    });
+
+    it("wave 1 contains only grunts", () => {
+        const list = waveEnemyList(1);
+        expect(list.every((e) => e === "grunt")).toBe(true);
     });
 
     it("every 5th wave includes exactly one boss", () => {

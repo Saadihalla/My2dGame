@@ -104,6 +104,23 @@ export const AudioFX = {
         this.noise(0.4, 0.3, 500);
     },
 
+    cast: function () {
+        this.ensure();
+        this.tone(300, 0.25, "sawtooth", 0.2, 700);
+    },
+
+    explode: function () {
+        this.ensure();
+        this.noise(0.5, 0.5, 300);
+        this.tone(90, 0.4, "square", 0.3, 40);
+    },
+
+    block: function () {
+        this.ensure();
+        this.tone(700, 0.08, "square", 0.22, 500);
+        this.noise(0.05, 0.2, 2000);
+    },
+
     pickup: function () {
         this.ensure();
         this.tone(660, 0.12, "square", 0.2, 990);

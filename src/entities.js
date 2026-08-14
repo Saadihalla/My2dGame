@@ -34,7 +34,7 @@ import {
     addHitStop
 } from "./fx.js";
 import { currentLevel, isColliding, aabb } from "./levels.js";
-import { decideEnemyState } from "./logic/ai.js";
+import { decideEnemyState, kiteDirection } from "./logic/ai.js";
 import { rollLoot } from "./logic/loot.js";
 import { dashDirection } from "./logic/dash.js";
 
@@ -100,6 +100,48 @@ const ENEMY_TYPES = {
         knockResist: 0.45,
         colors: ["#7a1f1f", "#4a1a1a", "#4a4a52", "#8a8a94"]
     },
+    swarm: {
+        name: "Imp",
+        hp: 35, speed: 190, damage: 5,
+        windup: 0.3, strike: 0.1, recover: 0.3,
+        attackCooldown: 1.0, attackRange: 38,
+        width: 24, height: 24,
+        score: 60, xp: 10,
+        knockResist: 1.3,
+        colors: ["#7a1010", "#8b1a1a", "#1a1a1e", "#ff5a5a"]
+    },
+    caster: {
+        name: "Hexer",
+        hp: 70, speed: 80, damage: 12,
+        windup: 0.8, strike: 0.15, recover: 0.5,
+        attackCooldown: 2.2, attackRange: 260,
+        preferredRange: 150, projectileSpeed: 260,
+        width: 34, height: 36,
+        score: 200, xp: 35,
+        knockResist: 1,
+        colors: ["#2a1a3a", "#3a2a4a", "#0d0d10", "#c07bff"]
+    },
+    exploder: {
+        name: "Bomber",
+        hp: 50, speed: 150, damage: 25,
+        windup: 0.7, strike: 0.15, recover: 0.4,
+        attackCooldown: 1.4, attackRange: 70,
+        blastRadius: 80,
+        width: 36, height: 36,
+        score: 150, xp: 30,
+        knockResist: 0.8,
+        colors: ["#4a3a28", "#5c4a34", "#3a2a1a", "#ff9d22"]
+    },
+    warden: {
+        name: "Warden",
+        hp: 160, speed: 75, damage: 14,
+        windup: 0.8, strike: 0.2, recover: 0.7,
+        attackCooldown: 1.5, attackRange: 60,
+        width: 46, height: 48,
+        score: 250, xp: 50,
+        knockResist: 0.6,
+        colors: ["#45454e", "#5a5a64", "#1a1a20", "#8a8a94"]
+    },
     boss: {
         name: "Pale King",
         hp: 900, speed: 90, damage: 22,
@@ -114,6 +156,7 @@ const ENEMY_TYPES = {
 
 export const enemies = [];
 export const loot = [];
+export const projectiles = [];
 
 export function spawnEnemy(type, x, y, hpScale) {
     const t = ENEMY_TYPES[type];
@@ -136,6 +179,9 @@ export function spawnEnemy(type, x, y, hpScale) {
         recover: t.recover,
         attackCooldown: t.attackCooldown,
         attackRange: t.attackRange,
+        preferredRange: t.preferredRange || 0,
+        projectileSpeed: t.projectileSpeed || 0,
+        blastRadius: t.blastRadius || 0,
         score: t.score,
         xp: t.xp,
         knockResist: t.knockResist,
@@ -147,7 +193,8 @@ export function spawnEnemy(type, x, y, hpScale) {
         flash: 0,
         kx: 0,
         ky: 0,
-        deadTimer: 0
+        deadTimer: 0,
+        turnTimer: 0
     });
 }
 
@@ -362,6 +409,29 @@ function getOverlap(e, p) {
 // ======================
 
 function damageEnemy(e) {
+    // Wardens block attacks aimed at their shielded (player-facing) side.
+
+    if (e.type === "warden") {
+        const playerCenterX = player.x + player.width / 2;
+        const enemyCenterX = e.x + e.width / 2;
+        const playerOnFront = (e.facing === "right" && playerCenterX >= enemyCenterX) ||
+            (e.facing === "left" && playerCenterX <= enemyCenterX);
+
+        if (playerOnFront) {
+            AudioFX.block();
+            addShake(2);
+            addNumber(e.x + e.width / 2, e.y - 14, "BLOCKED", "#9e9e9e");
+            spawnParticles(
+                e.facing === "right" ? e.x + e.width : e.x,
+                e.y + e.height / 2,
+                6,
+                ["#8a8a94", "#4a4a55", "#ffd75a"],
+                100
+            );
+            return;
+        }
+    }
+
     const crit = Math.random() < player.critChance;
     const damage = Math.round(player.damage * (crit ? 2 : 1));
 
@@ -489,25 +559,12 @@ export function playerAttack(dt) {
     }
 }
 
-function strikePlayer(e) {
+function hurtPlayer(amount) {
     if (player.invuln > 0 || gameState !== "playing") {
         return;
     }
 
-    const box = {
-        x: e.facing === "right" ? e.x + e.width : e.x - e.attackRange,
-        y: e.y + 4,
-        w: e.attackRange,
-        h: e.height - 8
-    };
-
-    const playerBox = { x: player.x, y: player.y, w: player.width, h: player.height };
-
-    if (!aabb(box, playerBox)) {
-        return;
-    }
-
-    player.health -= e.damage;
+    player.health -= amount;
     player.invuln = PLAYER_IFRAMES;
     stats.hitsTaken++;
 
@@ -522,12 +579,126 @@ function strikePlayer(e) {
         ["#c62828", "#8b1a1a", "#eee"],
         140
     );
-    addNumber(player.x + player.width / 2, player.y - 10, String(e.damage), "#ff6b6b");
+    addNumber(player.x + player.width / 2, player.y - 10, String(amount), "#ff6b6b");
 
     if (player.health <= 0) {
         player.health = 0;
         triggerPlayerDeath();
     }
+}
+
+function strikePlayer(e) {
+    const box = {
+        x: e.facing === "right" ? e.x + e.width : e.x - e.attackRange,
+        y: e.y + 4,
+        w: e.attackRange,
+        h: e.height - 8
+    };
+
+    const playerBox = { x: player.x, y: player.y, w: player.width, h: player.height };
+
+    if (!aabb(box, playerBox)) {
+        return;
+    }
+
+    hurtPlayer(e.damage);
+}
+
+// ======================
+// CASTER PROJECTILES
+// ======================
+
+function fireProjectile(e) {
+    const sx = e.x + e.width / 2;
+    const sy = e.y + e.height / 2;
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+    const dist = Math.hypot(px - sx, py - sy) || 1;
+    const dx = (px - sx) / dist;
+    const dy = (py - sy) / dist;
+
+    projectiles.push({
+        x: sx + dx * 20,
+        y: sy + dy * 20,
+        vx: dx * e.projectileSpeed,
+        vy: dy * e.projectileSpeed,
+        size: 7,
+        damage: e.damage,
+        life: 4,
+        color: e.colors[3] || "#c07bff"
+    });
+
+    addShake(2);
+    AudioFX.cast();
+}
+
+export function updateProjectiles(dt) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+
+        if (p.life <= 0 || isColliding(p.x, p.y, p.size, p.size)) {
+            projectiles.splice(i, 1);
+            continue;
+        }
+
+        if (aabb(
+            { x: p.x - p.size / 2, y: p.y - p.size / 2, w: p.size, h: p.size },
+            { x: player.x, y: player.y, w: player.width, h: player.height }
+        )) {
+            projectiles.splice(i, 1);
+            hurtPlayer(p.damage);
+        }
+    }
+}
+
+export function drawProjectiles(gameTime) {
+    for (const p of projectiles) {
+        const pulse = 0.5 + 0.5 * Math.sin(gameTime * 14);
+
+        ctx.globalAlpha = 0.35 + pulse * 0.3;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
+}
+
+// ======================
+// EXPLODER
+// ======================
+
+function explodeEnemy(e) {
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+    const ex = e.x + e.width / 2;
+    const ey = e.y + e.height / 2;
+
+    if (Math.hypot(px - ex, py - ey) < e.blastRadius + 20) {
+        hurtPlayer(e.damage);
+    }
+
+    addShake(14);
+    addHitStop(0.1);
+    AudioFX.explode();
+
+    spawnParticles(
+        ex,
+        ey,
+        40,
+        ["#ff9d22", "#ffd75a", "#4a3a28", "#c62828"],
+        260
+    );
+
+    killEnemy(e);
 }
 
 // ======================
@@ -578,7 +749,23 @@ export function updateEnemies(dt) {
         const dy = player.y + player.height / 2 - (e.y + e.height / 2);
         const dist = Math.hypot(dx, dy);
 
-        e.facing = dx >= 0 ? "right" : "left";
+        // Wardens turn with a delay so players can dash behind their
+        // shield; everything else tracks the player instantly.
+
+        const desiredFacing = dx >= 0 ? "right" : "left";
+
+        if (e.type === "warden") {
+            if (e.facing !== desiredFacing) {
+                if (e.turnTimer > 0) {
+                    e.turnTimer -= dt;
+                } else {
+                    e.facing = desiredFacing;
+                    e.turnTimer = 0.6;
+                }
+            }
+        } else {
+            e.facing = desiredFacing;
+        }
 
         updateEnemyState(e, dx, dy, dist, dt);
     }
@@ -615,7 +802,13 @@ function updateEnemyState(e, dx, dy, dist, dt) {
     });
 
     if (decision.cooldown !== undefined) {
-        strikePlayer(e);
+        if (e.type === "caster") {
+            fireProjectile(e);
+        } else if (e.type === "exploder") {
+            explodeEnemy(e);
+        } else {
+            strikePlayer(e);
+        }
         e.cooldown = decision.cooldown;
     }
 
@@ -626,10 +819,20 @@ function updateEnemyState(e, dx, dy, dist, dt) {
         }
     }
 
-    if (e.state === "chase" && dist > e.attackRange) {
-        const vx = (dx / dist) * e.speed * dt;
-        const vy = (dy / dist) * e.speed * dt;
-        tryMove(e, vx, vy);
+    if (e.state === "chase") {
+        if (e.type === "caster") {
+            const kite = kiteDirection(dist, e.preferredRange, e.attackRange);
+
+            if (kite !== 0 && dist > 1) {
+                const vx = (dx / dist) * e.speed * kite * dt;
+                const vy = (dy / dist) * e.speed * kite * dt;
+                tryMove(e, vx, vy);
+            }
+        } else if (dist > e.attackRange) {
+            const vx = (dx / dist) * e.speed * dt;
+            const vy = (dy / dist) * e.speed * dt;
+            tryMove(e, vx, vy);
+        }
     }
 
     if (e.state === "retreat" && dist > 1) {
@@ -1032,6 +1235,127 @@ function drawEnemyBody(e, ox, oy) {
 
         ctx.fillStyle = "#444";
         ctx.fillRect(x + 43, y + 36, 10, 4);
+    }
+
+    if (e.type === "swarm") {
+
+        ctx.fillStyle = "#5d1010";
+        ctx.fillRect(x + 18, y + 12, 6, 3);
+
+        ctx.fillStyle = "#7a1010";
+        ctx.fillRect(x + 5, y + 10, 14, 12);
+
+        ctx.fillStyle = "#8b1a1a";
+        ctx.fillRect(x + 8, y + 13, 8, 8);
+
+        ctx.fillStyle = "#8b1a1a";
+        ctx.fillRect(x + 7, y + 2, 10, 10);
+
+        ctx.fillStyle = "#1a1a1e";
+        ctx.fillRect(x + 5, y, 4, 4);
+        ctx.fillRect(x + 15, y, 4, 4);
+
+        ctx.fillStyle = "#ff5a5a";
+        ctx.fillRect(x + 9, y + 5, 2, 2);
+        ctx.fillRect(x + 14, y + 5, 2, 2);
+
+        ctx.fillStyle = "#4a0d0d";
+        ctx.fillRect(x + 7, y + 20, 4, 4);
+        ctx.fillRect(x + 13, y + 20, 4, 4);
+    }
+
+    if (e.type === "caster") {
+
+        ctx.fillStyle = "#1f122c";
+        ctx.fillRect(x + 4, y + 26, 26, 10);
+
+        ctx.fillStyle = "#2a1a3a";
+        ctx.fillRect(x + 6, y + 14, 22, 20);
+
+        ctx.fillStyle = "#3a2a4a";
+        ctx.fillRect(x + 8, y + 2, 18, 16);
+
+        ctx.fillStyle = "#0d0d10";
+        ctx.fillRect(x + 12, y + 8, 10, 8);
+
+        ctx.fillStyle = "#c07bff";
+        ctx.fillRect(x + 13, y + 10, 3, 2);
+        ctx.fillRect(x + 19, y + 10, 3, 2);
+
+        ctx.fillStyle = "#4a3a2a";
+        ctx.fillRect(x + 28, y + 2, 3, 26);
+
+        ctx.fillStyle = "#c07bff";
+        ctx.fillRect(x + 26, y - 2, 7, 7);
+
+        ctx.fillStyle = "#e0c0ff";
+        ctx.fillRect(x + 28, y, 3, 3);
+    }
+
+    if (e.type === "exploder") {
+
+        ctx.fillStyle = "#3a2a1a";
+        ctx.fillRect(x + 8, y + 28, 7, 8);
+        ctx.fillRect(x + 21, y + 28, 7, 8);
+
+        ctx.fillStyle = "#4a3a28";
+        ctx.fillRect(x + 5, y + 8, 26, 24);
+
+        ctx.fillStyle = "#5c4a34";
+        ctx.fillRect(x + 9, y + 12, 18, 16);
+
+        ctx.fillStyle = "#0d0d10";
+        ctx.fillRect(x + 12, y + 16, 4, 4);
+        ctx.fillRect(x + 20, y + 16, 4, 4);
+
+        ctx.fillStyle = "#ffd75a";
+        ctx.fillRect(x + 13, y + 23, 10, 2);
+
+        ctx.fillStyle = "#8b6a3a";
+        ctx.fillRect(x + 15, y + 4, 6, 5);
+
+        ctx.fillStyle = "#ff9d22";
+        ctx.fillRect(x + 16, y + 1, 4, 4);
+    }
+
+    if (e.type === "warden") {
+
+        ctx.fillStyle = "#2e2e36";
+        ctx.fillRect(x + 8, y + 36, 10, 12);
+        ctx.fillRect(x + 28, y + 36, 10, 12);
+
+        ctx.fillStyle = "#1a1a20";
+        ctx.fillRect(x + 5, y + 45, 14, 4);
+        ctx.fillRect(x + 27, y + 45, 14, 4);
+
+        ctx.fillStyle = "#45454e";
+        ctx.fillRect(x + 6, y + 16, 34, 26);
+
+        ctx.fillStyle = "#33333a";
+        ctx.fillRect(x + 6, y + 16, 5, 20);
+        ctx.fillRect(x + 35, y + 16, 5, 20);
+
+        ctx.fillStyle = "#5a5a64";
+        ctx.fillRect(x + 14, y + 4, 18, 16);
+
+        ctx.fillStyle = "#ff5a5a";
+        ctx.fillRect(x + 18, y + 10, 10, 3);
+
+        ctx.fillStyle = "#2e2e36";
+        ctx.fillRect(x + 2, y + 20, 6, 14);
+        ctx.fillRect(x + 38, y + 20, 6, 14);
+
+        ctx.fillStyle = "#888";
+        ctx.fillRect(x, y + 16, 4, 22);
+
+        ctx.fillStyle = "#2a2a33";
+        ctx.fillRect(x + 38, y + 14, 10, 24);
+
+        ctx.fillStyle = "#4a4a55";
+        ctx.fillRect(x + 39, y + 16, 8, 20);
+
+        ctx.fillStyle = "#ffd75a";
+        ctx.fillRect(x + 42, y + 20, 3, 8);
     }
 
     if (e.type === "boss") {

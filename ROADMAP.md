@@ -86,13 +86,16 @@ The biggest replayability win; nothing here needs rework of the foundation.
      (lifesteal), Cleave (wider sweeps)
    - Leveling pauses the action; pick via click or 1/2/3; multiple levels
      from one kill queue up sequentially
-2. **New enemy archetypes** ⏳ NEXT
-   - Ranged caster (telegraphed projectile)
-   - Exploder (telegraphed suicide rush)
-   - Shieldbearer (only takes hits from the front / unshielded side)
-   - Swarm minion (boss-spawned)
-3. **Real boss phases** — Pale King gets 3 phases: summon adds → radial
-   projectile burst → enrage charge
+2. **New enemy archetypes** ✅ DONE
+   - **Imp** (swarm) — fast, fragile chaff from wave 2
+   - **Hexer** (ranged caster) — kites at range, telegraphs, then fires
+     a glowing projectile (dash through it with i-frames) — wave 3+
+   - **Bomber** (exploder) — rushes in, telegraphs, then detonates in an
+     AoE blast, taking itself out — wave 4+
+   - **Warden** (shieldbearer) — blocks attacks from the player-facing
+     side; turns slowly, so dash behind it and strike its back — wave 5+
+3. **Real boss phases** ⏳ NEXT
+   - Pale King gets 3 phases: summon adds → radial projectile burst → enrage charge
 4. **Elemental loot/weapons** — fire (DoT), frost (slow), chain lightning;
    enemy resistances
 5. **Environment hazards** — spike traps, lava pools, pressure-plate doors

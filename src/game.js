@@ -60,10 +60,12 @@ import {
     updatePlayer,
     updateEnemies,
     updateLoot,
+    updateProjectiles,
     playerAttack,
     drawPlayer,
     drawEnemies,
     drawLoot,
+    drawProjectiles,
     allEnemiesDead
 } from "./entities.js";
 import { drawHUD, drawOverlays } from "./ui.js";
@@ -206,6 +208,7 @@ function update(dt) {
     updatePlayer(dt);
     updateEnemies(dt);
     updateLoot();
+    updateProjectiles(dt);
     playerAttack(dt);
     updateWaves(dt);
 }
@@ -263,6 +266,7 @@ function draw(alpha) {
     drawParticles();
     drawPlayer(gameTime, alpha);
     drawEnemies(gameTime, alpha);
+    drawProjectiles(gameTime);
     drawNumbers();
 
     ctx.restore();

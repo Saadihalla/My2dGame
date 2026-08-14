@@ -44,3 +44,15 @@ export function decideEnemyState(state, ctx) {
 
     return { state: "chase" };
 }
+
+// Movement decision for kiting enemies: -1 retreat, 0 hold, +1 approach.
+
+export function kiteDirection(dist, minRange, maxRange) {
+    if (dist < minRange) {
+        return -1;
+    }
+    if (dist > maxRange) {
+        return 1;
+    }
+    return 0;
+}

@@ -33,7 +33,7 @@ import { clearFX } from "./fx.js";
 import { clearBanners, showBanner } from "./banners.js";
 import { clearDashRequest } from "./input.js";
 import { buildLevel, LEVELS, currentLevel, levelIndex } from "./levels.js";
-import { player, enemies, loot, resetPlayer } from "./entities.js";
+import { player, enemies, loot, projectiles, resetPlayer } from "./entities.js";
 import { setButtons, makeButton, makeCard } from "./ui.js";
 import { rollUpgradeOptions } from "./logic/upgrades.js";
 
@@ -58,6 +58,7 @@ export function resetRun() {
 
     enemies.length = 0;
     loot.length = 0;
+    projectiles.length = 0;
 
     setWave(1);
     setWaveState("break");
@@ -91,6 +92,7 @@ export function goTitle() {
     setGameState("title");
     enemies.length = 0;
     loot.length = 0;
+    projectiles.length = 0;
     setButtons([
         makeButton("START", startGame, 250)
     ]);
@@ -137,6 +139,7 @@ export function advanceLevel() {
     buildLevel((levelIndex + 1) % LEVELS.length);
 
     setPortalActive(false);
+    projectiles.length = 0;
 
     player.x = currentLevel.spawn.x;
     player.y = currentLevel.spawn.y;

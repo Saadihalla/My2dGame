@@ -26,7 +26,7 @@ npm run lint       # run eslint
 
 ## Game loop
 
-- Survive **waves** of enemies: grunts, fast stalkers, armored bulwarks, and a **Pale King boss** every 5th wave
+- Survive **waves** of enemies: grunts, fast stalkers, armored bulwarks, swarm imps, ranged hexers (telegraphed projectiles), self-detonating bombers, shield wardens (block attacks from the front — dash behind them), and a **Pale King boss** every 5th wave
 - Clear a wave → an **exit portal** opens → step in to reach the next level (Forest Ruins → Crypt → Highlands, each with its own palette and layout)
 - **Clear wave 10** to win
 - Enemies scale in HP each wave

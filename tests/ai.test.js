@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { decideEnemyState } from "../src/logic/ai.js";
+import { decideEnemyState, kiteDirection } from "../src/logic/ai.js";
 
 function ctx(overrides) {
     return Object.assign({
@@ -70,5 +70,24 @@ describe("decideEnemyState", () => {
 
     it("unknown states fall back to chase", () => {
         expect(decideEnemyState("nonsense", ctx())).toEqual({ state: "chase" });
+    });
+});
+
+describe("kiteDirection", () => {
+    it("retreats when too close", () => {
+        expect(kiteDirection(100, 150, 260)).toBe(-1);
+    });
+
+    it("approaches when too far", () => {
+        expect(kiteDirection(400, 150, 260)).toBe(1);
+    });
+
+    it("holds position inside the band", () => {
+        expect(kiteDirection(200, 150, 260)).toBe(0);
+    });
+
+    it("holds at the exact band edges", () => {
+        expect(kiteDirection(150, 150, 260)).toBe(0);
+        expect(kiteDirection(260, 150, 260)).toBe(0);
     });
 });
