@@ -2,7 +2,7 @@
 // AUDIO (WebAudio synth)
 // ======================
 
-const AudioFX = {
+export const AudioFX = {
     ctx: null,
     master: null,
 

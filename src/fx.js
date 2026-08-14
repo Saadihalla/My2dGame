@@ -2,12 +2,14 @@
 // FX (particles, damage numbers, shake, vignette)
 // ======================
 
+import { ctx, VIEW_WIDTH, VIEW_HEIGHT } from "./config.js";
+
 let particles = [];
 let numbers = [];
 let shake = 0;
 let hitVignette = 0;
 
-function spawnParticles(x, y, count, colors, speed) {
+export function spawnParticles(x, y, count, colors, speed) {
     for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const magnitude = speed * (0.4 + Math.random() * 0.8);
@@ -25,7 +27,7 @@ function spawnParticles(x, y, count, colors, speed) {
     }
 }
 
-function addNumber(x, y, text, color) {
+export function addNumber(x, y, text, color) {
     numbers.push({
         x: x,
         y: y,
@@ -35,15 +37,15 @@ function addNumber(x, y, text, color) {
     });
 }
 
-function addShake(amount) {
+export function addShake(amount) {
     shake = Math.min(shake + amount, 18);
 }
 
-function setHitVignette() {
+export function setHitVignette() {
     hitVignette = 1;
 }
 
-function updateFX(dt) {
+export function updateFX(dt) {
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.life -= dt;
@@ -77,18 +79,18 @@ function updateFX(dt) {
     }
 }
 
-function clearFX() {
+export function clearFX() {
     particles.length = 0;
     numbers.length = 0;
     shake = 0;
     hitVignette = 0;
 }
 
-function getShake() {
+export function getShake() {
     return shake;
 }
 
-function drawParticles() {
+export function drawParticles() {
     for (const p of particles) {
         ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
         ctx.fillStyle = p.color;
@@ -97,7 +99,7 @@ function drawParticles() {
     ctx.globalAlpha = 1;
 }
 
-function drawNumbers() {
+export function drawNumbers() {
     for (const n of numbers) {
         ctx.globalAlpha = Math.min(1, n.life / 0.45);
         ctx.fillStyle = n.color;
@@ -108,7 +110,7 @@ function drawNumbers() {
     ctx.globalAlpha = 1;
 }
 
-function drawVignette(lowHealth) {
+export function drawVignette(lowHealth) {
     const alpha = Math.max(hitVignette * 0.6, lowHealth * 0.35);
 
     if (alpha <= 0.02) {

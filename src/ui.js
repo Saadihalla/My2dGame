@@ -2,67 +2,46 @@
 // UI (HUD, banners, screens, buttons)
 // ======================
 
-let uiButtons = [];
-let banners = [];
+import { canvas, ctx, VIEW_WIDTH, VIEW_HEIGHT } from "./config.js";
+import { gameState, stats, wave, highScore, newHighScore } from "./state.js";
+import { player } from "./entities.js";
 
-function setButtons(list) {
+let uiButtons = [];
+
+export function setButtons(list) {
     uiButtons = list;
 }
 
-function showBanner(text, sub, duration) {
-    banners.push({
-        text: text,
-        sub: sub || "",
-        timer: duration || 2.5,
-        max: duration || 2.5
-    });
-
-    if (banners.length > 3) {
-        banners.shift();
-    }
+export function makeButton(label, action, y) {
+    return {
+        x: VIEW_WIDTH / 2 - 100,
+        y: y,
+        w: 200,
+        h: 48,
+        label: label,
+        action: action
+    };
 }
 
-function updateBanners(dt) {
-    for (let i = banners.length - 1; i >= 0; i--) {
-        banners[i].timer -= dt;
+function drawButton(button) {
+    ctx.fillStyle = "#3498db";
+    ctx.fillRect(button.x, button.y, button.w, button.h);
 
-        if (banners[i].timer <= 0) {
-            banners.splice(i, 1);
-        }
-    }
-}
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.strokeRect(button.x, button.y, button.w, button.h);
 
-function drawBanners() {
-    let y = 96;
+    ctx.fillStyle = "white";
+    ctx.font = "bold 20px Arial";
+    ctx.textAlign = "center";
 
-    for (const banner of banners) {
-        const alpha = Math.min(1, banner.timer / 0.4);
-
-        ctx.globalAlpha = alpha;
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 34px Georgia, serif";
-        ctx.textAlign = "center";
-
-        ctx.fillText(banner.text, VIEW_WIDTH / 2, y);
-
-        if (banner.sub) {
-            ctx.fillStyle = "#dddddd";
-            ctx.font = "16px Arial";
-            ctx.fillText(banner.sub, VIEW_WIDTH / 2, y + 24);
-        }
-
-        y += banner.sub ? 62 : 46;
-    }
-
-    ctx.globalAlpha = 1;
+    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 7);
 }
 
 // ======================
 // HUD
 // ======================
 
-function drawHUD() {
+export function drawHUD() {
     const barWidth = 200;
     const barHeight = 16;
 
@@ -136,39 +115,10 @@ function drawHUD() {
 }
 
 // ======================
-// BUTTONS
-// ======================
-
-function makeButton(label, action, y) {
-    return {
-        x: VIEW_WIDTH / 2 - 100,
-        y: y,
-        w: 200,
-        h: 48,
-        label: label,
-        action: action
-    };
-}
-
-function drawButton(button) {
-    ctx.fillStyle = "#3498db";
-    ctx.fillRect(button.x, button.y, button.w, button.h);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-    ctx.strokeRect(button.x, button.y, button.w, button.h);
-
-    ctx.fillStyle = "white";
-    ctx.font = "bold 20px Arial";
-    ctx.textAlign = "center";
-
-    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 7);
-}
-
-// ======================
 // SCREENS
 // ======================
 
-function drawOverlays() {
+export function drawOverlays() {
     if (gameState === "playing") {
         return;
     }

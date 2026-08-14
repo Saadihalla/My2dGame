@@ -1,0 +1,22 @@
+{
+  "name": "dark-fantasy",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "A dark fantasy arena survival game built with vanilla JS + Canvas",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

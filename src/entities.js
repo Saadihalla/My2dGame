@@ -2,9 +2,37 @@
 // ENTITIES (player, enemies, loot)
 // ======================
 
-const player = {
+import {
+    ctx,
+    PLAYER_SPEED,
+    PLAYER_BASE_HEALTH,
+    PLAYER_IFRAMES,
+    ATTACK_DURATION,
+    ATTACK_COOLDOWN,
+    ATTACK_BASE_DAMAGE,
+    ATTACK_BASE_RANGE,
+    POTION_HEAL,
+    LEVEL_XP_BASE,
+    LEVEL_XP_GROWTH,
+    LEVEL_HP_BONUS,
+    LEVEL_HEAL
+} from "./config.js";
+
+import { gameState, stats, addScore } from "./state.js";
+import { triggerPlayerDeath } from "./events.js";
+import { keys, attacking } from "./input.js";
+import { AudioFX } from "./audio.js";
+import { spawnParticles, addNumber, addShake, setHitVignette } from "./fx.js";
+import { currentLevel, isColliding, aabb } from "./levels.js";
+import { showBanner } from "./banners.js";
+import { decideEnemyState } from "./logic/ai.js";
+import { rollLoot } from "./logic/loot.js";
+
+export const player = {
     x: 100,
     y: 100,
+    prevX: 100,
+    prevY: 100,
     width: 40,
     height: 40,
     health: PLAYER_BASE_HEALTH,
@@ -63,16 +91,18 @@ const ENEMY_TYPES = {
     }
 };
 
-let enemies = [];
-let loot = [];
+export const enemies = [];
+export const loot = [];
 
-function spawnEnemy(type, x, y, hpScale) {
+export function spawnEnemy(type, x, y, hpScale) {
     const t = ENEMY_TYPES[type];
 
     enemies.push({
         type: type,
         x: x,
         y: y,
+        prevX: x,
+        prevY: y,
         width: t.width,
         height: t.height,
         health: Math.round(t.hp * hpScale),
@@ -110,23 +140,6 @@ function enemyBlocked(x, y, w, h) {
     return aabb(rect, playerBox);
 }
 
-function playerBlocked(x, y, w, h) {
-    if (isColliding(x, y, w, h)) {
-        return true;
-    }
-
-    for (const e of enemies) {
-        if (e.health <= 0) {
-            continue;
-        }
-        if (aabb({ x: x, y: y, w: w, h: h }, { x: e.x, y: e.y, w: e.width, h: e.height })) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 function tryMove(ent, vx, vy) {
     if (!enemyBlocked(ent.x + vx, ent.y, ent.width, ent.height)) {
         ent.x += vx;
@@ -140,9 +153,11 @@ function tryMove(ent, vx, vy) {
 // PLAYER
 // ======================
 
-function resetPlayer() {
+export function resetPlayer() {
     player.x = currentLevel.spawn.x;
     player.y = currentLevel.spawn.y;
+    player.prevX = player.x;
+    player.prevY = player.y;
     player.health = player.maxHealth;
     player.direction = "right";
     player.attackTimer = 0;
@@ -150,7 +165,10 @@ function resetPlayer() {
     player.invuln = 0;
 }
 
-function updatePlayer(dt) {
+export function updatePlayer(dt) {
+    player.prevX = player.x;
+    player.prevY = player.y;
+
     let dx = 0;
     let dy = 0;
 
@@ -172,10 +190,10 @@ function updatePlayer(dt) {
         const moveX = (dx / length) * PLAYER_SPEED * dt;
         const moveY = (dy / length) * PLAYER_SPEED * dt;
 
-        if (!playerBlocked(player.x + moveX, player.y, player.width, player.height)) {
+        if (!isColliding(player.x + moveX, player.y, player.width, player.height)) {
             player.x += moveX;
         }
-        if (!playerBlocked(player.x, player.y + moveY, player.width, player.height)) {
+        if (!isColliding(player.x, player.y + moveY, player.width, player.height)) {
             player.y += moveY;
         }
 
@@ -185,6 +203,66 @@ function updatePlayer(dt) {
             player.direction = dy > 0 ? "down" : "up";
         }
     }
+
+    resolveEnemyOverlaps();
+}
+
+// The player can shove enemies out of the way instead of being
+// hard-blocked by them (prevents getting permanently pinned in a
+// corner). An enemy backed against terrain still body-blocks.
+
+function resolveEnemyOverlaps() {
+    for (const e of enemies) {
+        if (e.health <= 0) {
+            continue;
+        }
+
+        const overlap = getOverlap(e, player);
+        if (!overlap) {
+            continue;
+        }
+
+        let pushX = 0;
+        let pushY = 0;
+
+        if (overlap.dx < overlap.dy) {
+            pushX = overlap.signX * overlap.dx;
+        } else {
+            pushY = overlap.signY * overlap.dy;
+        }
+
+        if (!isColliding(e.x + pushX, e.y, e.width, e.height)) {
+            e.x += pushX;
+        } else if (!isColliding(e.x, e.y + pushY, e.width, e.height)) {
+            e.y += pushY;
+        } else {
+            // Enemy is pinned — push the player back out instead.
+            const backX = -pushX;
+            const backY = -pushY;
+
+            if (!isColliding(player.x + backX, player.y, player.width, player.height)) {
+                player.x += backX;
+            } else if (!isColliding(player.x, player.y + backY, player.width, player.height)) {
+                player.y += backY;
+            }
+        }
+    }
+}
+
+function getOverlap(e, p) {
+    const dx = Math.min(e.x + e.width, p.x + p.width) - Math.max(e.x, p.x);
+    const dy = Math.min(e.y + e.height, p.y + p.height) - Math.max(e.y, p.y);
+
+    if (dx <= 0 || dy <= 0) {
+        return null;
+    }
+
+    return {
+        dx: dx,
+        dy: dy,
+        signX: e.x < p.x ? -1 : 1,
+        signY: e.y < p.y ? -1 : 1
+    };
 }
 
 // ======================
@@ -243,7 +321,7 @@ function killEnemy(e) {
     dropLoot(e);
 }
 
-function playerAttack(dt) {
+export function playerAttack(dt) {
     if (player.attackCooldown > 0) {
         player.attackCooldown -= dt;
     }
@@ -343,7 +421,7 @@ function strikePlayer(e) {
 
     if (player.health <= 0) {
         player.health = 0;
-        onPlayerDeath();
+        triggerPlayerDeath();
     }
 }
 
@@ -351,14 +429,14 @@ function strikePlayer(e) {
 // ENEMY AI
 // ======================
 
-function updateEnemies(dt) {
+export function updateEnemies(dt) {
     for (const e of enemies) {
         if (e.health <= 0) {
-            if (e.barHealth > 0) {
-                e.barHealth = Math.max(0, e.barHealth - 60 * dt);
-            }
             continue;
         }
+
+        e.prevX = e.x;
+        e.prevY = e.y;
 
         if (e.flash > 0) {
             e.flash -= dt;
@@ -394,63 +472,57 @@ function updateEnemies(dt) {
 
         e.facing = dx >= 0 ? "right" : "left";
 
-        switch (e.state) {
-            case "chase":
-                if (dist > e.attackRange) {
-                    const vx = (dx / dist) * e.speed * dt;
-                    const vy = (dy / dist) * e.speed * dt;
-                    tryMove(e, vx, vy);
-                } else if (e.cooldown <= 0) {
-                    e.state = "windup";
-                    e.stateTimer = e.windup;
-                }
-                break;
-
-            case "windup":
-                e.stateTimer -= dt;
-                if (e.stateTimer <= 0) {
-                    e.state = "strike";
-                    e.stateTimer = e.strikeTime;
-                }
-                break;
-
-            case "strike":
-                e.stateTimer -= dt;
-                if (e.stateTimer <= 0) {
-                    strikePlayer(e);
-                    e.state = "recover";
-                    e.stateTimer = e.recover;
-                    e.cooldown = e.attackCooldown;
-                }
-                break;
-
-            case "recover":
-                e.stateTimer -= dt;
-                if (e.stateTimer <= 0) {
-                    if (e.type === "grunt" && e.health <= e.maxHealth * 0.3 && Math.random() < 0.35) {
-                        e.state = "retreat";
-                        e.stateTimer = 0.8;
-                    } else {
-                        e.state = "chase";
-                    }
-                }
-                break;
-
-            case "retreat":
-                e.stateTimer -= dt;
-                if (e.stateTimer > 0 && dist > 1) {
-                    const vx = (-dx / dist) * e.speed * dt;
-                    const vy = (-dy / dist) * e.speed * dt;
-                    tryMove(e, vx, vy);
-                } else {
-                    e.state = "chase";
-                }
-                break;
-        }
+        updateEnemyState(e, dx, dy, dist, dt);
     }
 }
 
-function allEnemiesDead() {
+function updateEnemyState(e, dx, dy, dist, dt) {
+    if (e.state !== "chase") {
+        e.stateTimer -= dt;
+    }
+
+    const decision = decideEnemyState(e.state, {
+        stateTimerDone: e.stateTimer <= 0,
+        inRange: dist <= e.attackRange,
+        cooldownReady: e.cooldown <= 0,
+        type: e.type,
+        hpRatio: e.health / e.maxHealth,
+        retreatRoll: Math.random(),
+        dist: dist,
+        timers: {
+            windup: e.windup,
+            strike: e.strikeTime,
+            recover: e.recover,
+            cooldown: e.attackCooldown
+        }
+    });
+
+    if (decision.cooldown !== undefined) {
+        strikePlayer(e);
+        e.cooldown = decision.cooldown;
+    }
+
+    if (decision.state !== e.state || decision.timer !== undefined) {
+        e.state = decision.state;
+        if (decision.timer !== undefined) {
+            e.stateTimer = decision.timer;
+        }
+    }
+
+    if (e.state === "chase" && dist > e.attackRange) {
+        const vx = (dx / dist) * e.speed * dt;
+        const vy = (dy / dist) * e.speed * dt;
+        tryMove(e, vx, vy);
+    }
+
+    if (e.state === "retreat" && dist > 1) {
+        const vx = (-dx / dist) * e.speed * dt;
+        const vy = (-dy / dist) * e.speed * dt;
+        tryMove(e, vx, vy);
+    }
+}
+
+export function allEnemiesDead() {
     return enemies.every(function (e) {
         return e.health <= 0;
     });
@@ -481,30 +553,22 @@ function gainXP(amount) {
 // ======================
 
 function dropLoot(e) {
-    const roll = Math.random();
+    const drops = rollLoot(e.type, Math.random());
 
-    if (e.type === "boss") {
-        loot.push({ kind: "potion", x: e.x + e.width / 2, y: e.y + e.height / 2 });
-        loot.push({ kind: "upgrade", x: e.x + e.width / 2 - 30, y: e.y + e.height / 2 + 10 });
-        return;
-    }
-
-    if (e.type === "tank" && roll < 0.18) {
-        loot.push({ kind: "upgrade", x: e.x + e.width / 2, y: e.y + e.height / 2 });
-        return;
-    }
-
-    if (roll < 0.08) {
-        loot.push({ kind: "upgrade", x: e.x + e.width / 2, y: e.y + e.height / 2 });
-        return;
-    }
-
-    if (roll < 0.28) {
-        loot.push({ kind: "potion", x: e.x + e.width / 2, y: e.y + e.height / 2 });
+    for (const kind of drops) {
+        if (kind === "upgrade" && e.type === "boss") {
+            loot.push({
+                kind: "upgrade",
+                x: e.x + e.width / 2 - 30,
+                y: e.y + e.height / 2 + 10
+            });
+        } else {
+            loot.push({ kind: kind, x: e.x + e.width / 2, y: e.y + e.height / 2 });
+        }
     }
 }
 
-function updateLoot(dt) {
+export function updateLoot() {
     for (let i = loot.length - 1; i >= 0; i--) {
         const item = loot[i];
         const rect = { x: item.x - 10, y: item.y - 10, w: 20, h: 20 };
@@ -569,7 +633,7 @@ function drawSwordSwing(x, y) {
     ctx.restore();
 }
 
-function drawPlayer(gameTime) {
+export function drawPlayer(gameTime, alpha) {
     if (
         player.invuln > 0 &&
         gameState === "playing" &&
@@ -578,8 +642,8 @@ function drawPlayer(gameTime) {
         return;
     }
 
-    const x = player.x;
-    const y = player.y;
+    const x = player.x + (player.x - player.prevX) * alpha;
+    const y = player.y + (player.y - player.prevY) * alpha;
 
     const swinging = player.attackTimer > 0;
 
@@ -848,14 +912,14 @@ function drawEnemyBody(e) {
     }
 }
 
-function drawEnemies(gameTime) {
+export function drawEnemies(gameTime, alpha) {
     for (const e of enemies) {
         if (e.health <= 0) {
             continue;
         }
 
-        const x = e.x;
-        const y = e.y;
+        const x = e.x + (e.x - e.prevX) * alpha;
+        const y = e.y + (e.y - e.prevY) * alpha;
 
         // Health bar
 
@@ -906,7 +970,7 @@ function drawEnemies(gameTime) {
 // DRAW LOOT
 // ======================
 
-function drawLoot(gameTime) {
+export function drawLoot(gameTime) {
     for (const item of loot) {
         const bob = Math.sin(gameTime * 5 + item.x) * 2;
 

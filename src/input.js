@@ -2,15 +2,22 @@
 // INPUT (keyboard + mobile)
 // ======================
 
-const keys = {};
-let attacking = false;
+import { gameState } from "./state.js";
+import {
+    triggerStartGame,
+    triggerRestartGame,
+    triggerTogglePause
+} from "./events.js";
+
+export const keys = {};
+export let attacking = false;
 
 document.addEventListener("keydown", function (event) {
     const key = event.key.toLowerCase();
     keys[key] = true;
 
     if (gameState === "title" && (key === "enter" || event.code === "Space")) {
-        startGame();
+        triggerStartGame();
         return;
     }
 
@@ -20,11 +27,11 @@ document.addEventListener("keydown", function (event) {
     }
 
     if (key === "r") {
-        restartGame();
+        triggerRestartGame();
     }
 
     if (key === "p" || key === "escape") {
-        togglePause();
+        triggerTogglePause();
     }
 
     if (["arrowup", "arrowdown", "arrowleft", "arrowright"].indexOf(key) !== -1) {

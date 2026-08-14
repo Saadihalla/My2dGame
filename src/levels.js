@@ -2,7 +2,12 @@
 // LEVELS (maps, decor, palettes)
 // ======================
 
-const LEVELS = [
+import { TILE, ctx, VIEW_WIDTH, VIEW_HEIGHT } from "./config.js";
+import { isColliding as rectCollides } from "./logic/collision.js";
+
+export { aabb } from "./logic/collision.js";
+
+export const LEVELS = [
     {
         name: "Forest Ruins",
         spawn: { x: 100, y: 100 },
@@ -151,13 +156,14 @@ const LEVELS = [
     }
 ];
 
-let levelIndex = 0;
-let currentLevel = null;
-let currentMap = [];
-let solidObjects = [];
+export let levelIndex = 0;
+export let currentLevel = null;
+export let currentMap = [];
+export let solidObjects = [];
+
 let currentTorches = [];
 
-function buildLevel(index) {
+export function buildLevel(index) {
     levelIndex = index;
     currentLevel = LEVELS[index];
 
@@ -194,50 +200,8 @@ function buildLevel(index) {
 // COLLISION
 // ======================
 
-function aabb(a, b) {
-    return (
-        a.x < b.x + b.w &&
-        a.x + a.w > b.x &&
-        a.y < b.y + b.h &&
-        a.y + a.h > b.y
-    );
-}
-
-function isColliding(x, y, width, height) {
-    const left = Math.floor(x / TILE);
-    const right = Math.floor((x + width - 1) / TILE);
-    const top = Math.floor(y / TILE);
-    const bottom = Math.floor((y + height - 1) / TILE);
-
-    for (let row = top; row <= bottom; row++) {
-        for (let column = left; column <= right; column++) {
-            if (
-                row < 0 ||
-                row >= currentMap.length ||
-                column < 0 ||
-                column >= currentMap[row].length
-            ) {
-                return true;
-            }
-
-            if (currentMap[row][column] === 1) {
-                return true;
-            }
-        }
-    }
-
-    for (const object of solidObjects) {
-        if (
-            x < object.x + object.w &&
-            x + width > object.x &&
-            y < object.y + object.h &&
-            y + height > object.y
-        ) {
-            return true;
-        }
-    }
-
-    return false;
+export function isColliding(x, y, width, height) {
+    return rectCollides(x, y, width, height, currentMap, solidObjects, TILE);
 }
 
 // ======================
@@ -328,7 +292,7 @@ function drawTorch(x, y, time) {
     ctx.fillRect(x - 1, y - 9 - flicker * 0.4, 8, 9 + flicker);
 }
 
-function drawMap(time) {
+export function drawMap(time) {
     const p = currentLevel.palette;
 
     ctx.fillStyle = p.base;
@@ -420,7 +384,7 @@ function drawMap(time) {
 // TORCH LIGHT
 // ======================
 
-function drawTorchLights(time) {
+export function drawTorchLights(time) {
     ctx.globalCompositeOperation = "lighter";
 
     for (const torch of currentTorches) {
