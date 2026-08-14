@@ -17,10 +17,12 @@ npm run lint       # run eslint
 
 - **W A S D / arrows** — move
 - **SPACE / ⚔ button** — attack (hold to keep swinging)
-- **P / Esc** — pause
+- **SHIFT / double-tap a direction / » button / gamepad X** — dash (brief burst of speed with i-frames; the player pixelates into a trail of pixels mid-air)
+- **P / Esc / ❚❚ button / gamepad Start** — pause
 - **R / ↻** — restart
 - **Enter / START** — begin
-- **Joystick** — mobile movement (appears on small screens)
+- **Gamepad** — left stick to move, A to attack, X to dash, Start to start/pause
+- **Joystick + »** — mobile movement and dash (appear on small screens)
 
 ## Game loop
 
@@ -34,7 +36,15 @@ npm run lint       # run eslint
 - **XP & levels** — each kill grants XP; leveling up raises max HP and heals you
 - **Health potions** drop from kills (red flask)
 - **Sword upgrades** drop occasionally (gold sword): +4 damage, +5 range
+- **Dash** — a quick burst in any direction (or your facing when idle) on a short cooldown; grants invulnerability frames and shoves enemies aside
 - **Score** — kills, wave-clear bonuses, level bonuses; best score is saved in `localStorage`
+
+## Juice
+
+- **Hit-stop** — the action freezes for a beat on kills and heavy boss hits
+- **Death animations** — enemies fade out and sink instead of vanishing
+- **Pixel air dash** — the player sprite is downsampled into chunky pixels mid-dash, leaving a trail of pixel debris
+- Particles, damage numbers, screen shake, hurt vignette, torch light
 
 ## Architecture
 

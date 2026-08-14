@@ -2,7 +2,7 @@
 // UI (HUD, banners, screens, buttons)
 // ======================
 
-import { canvas, ctx, VIEW_WIDTH, VIEW_HEIGHT } from "./config.js";
+import { canvas, ctx, VIEW_WIDTH, VIEW_HEIGHT, DASH_COOLDOWN } from "./config.js";
 import { gameState, stats, wave, highScore, newHighScore } from "./state.js";
 import { player } from "./entities.js";
 
@@ -49,7 +49,7 @@ export function drawHUD() {
     const y = 20;
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.fillRect(x - 6, y - 6, barWidth + 12, 56);
+    ctx.fillRect(x - 6, y - 6, barWidth + 12, 62);
 
     // Health
 
@@ -79,12 +79,25 @@ export function drawHUD() {
     ctx.fillStyle = "#4a9fe8";
     ctx.fillRect(x, y + 22, barWidth * Math.min(1, player.xp / player.xpNext), 8);
 
+    // Dash cooldown
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.fillRect(x, y + 34, barWidth, 5);
+
+    ctx.fillStyle = player.dashCooldown > 0 ? "#777777" : "#7dff8a";
+    ctx.fillRect(
+        x,
+        y + 34,
+        barWidth * Math.max(0, 1 - player.dashCooldown / DASH_COOLDOWN),
+        5
+    );
+
     ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
     ctx.font = "11px Arial";
-    ctx.fillText("LV " + player.level, x + 2, y + 46);
+    ctx.fillText("LV " + player.level, x + 2, y + 50);
 
     ctx.fillStyle = "#7ec8ff";
-    ctx.fillText("DMG " + player.damage + " · RNG " + player.range, x + 60, y + 46);
+    ctx.fillText("DMG " + player.damage + " · RNG " + player.range, x + 60, y + 50);
 
     // Stats (top-right)
 

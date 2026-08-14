@@ -15,18 +15,30 @@ import {
     LEVEL_XP_BASE,
     LEVEL_XP_GROWTH,
     LEVEL_HP_BONUS,
-    LEVEL_HEAL
+    LEVEL_HEAL,
+    DASH_SPEED,
+    DASH_DURATION,
+    DASH_IFRAMES,
+    DASH_COOLDOWN,
+    DEATH_FADE
 } from "./config.js";
 
 import { gameState, stats, addScore } from "./state.js";
 import { triggerPlayerDeath } from "./events.js";
-import { keys, attacking } from "./input.js";
+import { keys, attacking, consumeDashRequest } from "./input.js";
 import { AudioFX } from "./audio.js";
-import { spawnParticles, addNumber, addShake, setHitVignette } from "./fx.js";
+import {
+    spawnParticles,
+    addNumber,
+    addShake,
+    setHitVignette,
+    addHitStop
+} from "./fx.js";
 import { currentLevel, isColliding, aabb } from "./levels.js";
 import { showBanner } from "./banners.js";
 import { decideEnemyState } from "./logic/ai.js";
 import { rollLoot } from "./logic/loot.js";
+import { dashDirection } from "./logic/dash.js";
 
 export const player = {
     x: 100,
@@ -45,7 +57,11 @@ export const player = {
     level: 1,
     xp: 0,
     xpNext: LEVEL_XP_BASE,
-    invuln: 0
+    invuln: 0,
+    dashTimer: 0,
+    dashCooldown: 0,
+    dashDX: 1,
+    dashDY: 0
 };
 
 const ENEMY_TYPES = {
@@ -125,7 +141,8 @@ export function spawnEnemy(type, x, y, hpScale) {
         cooldown: 0,
         flash: 0,
         kx: 0,
-        ky: 0
+        ky: 0,
+        deadTimer: 0
     });
 }
 
@@ -163,11 +180,81 @@ export function resetPlayer() {
     player.attackTimer = 0;
     player.attackCooldown = 0;
     player.invuln = 0;
+    player.dashTimer = 0;
+    player.dashCooldown = 0;
+}
+
+function tryStartDash() {
+    if (player.dashCooldown > 0 || player.dashTimer > 0) {
+        return;
+    }
+
+    let dx = 0;
+    let dy = 0;
+
+    if (keys["w"] || keys["arrowup"]) {
+        dy -= 1;
+    }
+    if (keys["s"] || keys["arrowdown"]) {
+        dy += 1;
+    }
+    if (keys["a"] || keys["arrowleft"]) {
+        dx -= 1;
+    }
+    if (keys["d"] || keys["arrowright"]) {
+        dx += 1;
+    }
+
+    const dir = dashDirection(dx, dy, player.direction);
+
+    player.dashDX = dir.dx;
+    player.dashDY = dir.dy;
+    player.dashTimer = DASH_DURATION;
+    player.dashCooldown = DASH_COOLDOWN;
+    player.invuln = Math.max(player.invuln, DASH_IFRAMES);
+
+    addShake(2);
+    AudioFX.dash();
 }
 
 export function updatePlayer(dt) {
     player.prevX = player.x;
     player.prevY = player.y;
+
+    if (player.dashCooldown > 0) {
+        player.dashCooldown -= dt;
+    }
+
+    if (consumeDashRequest()) {
+        tryStartDash();
+    }
+
+    // Dash: commit to the direction, ignore movement input.
+
+    if (player.dashTimer > 0) {
+        player.dashTimer -= dt;
+
+        const moveX = player.dashDX * DASH_SPEED * dt;
+        const moveY = player.dashDY * DASH_SPEED * dt;
+
+        if (!isColliding(player.x + moveX, player.y, player.width, player.height)) {
+            player.x += moveX;
+        }
+        if (!isColliding(player.x, player.y + moveY, player.width, player.height)) {
+            player.y += moveY;
+        }
+
+        spawnParticles(
+            player.x + player.width / 2,
+            player.y + player.height / 2,
+            3,
+            ["#292929", "#444444", "#c58b65", "#080808"],
+            70
+        );
+
+        resolveEnemyOverlaps();
+        return;
+    }
 
     let dx = 0;
     let dy = 0;
@@ -281,6 +368,10 @@ function damageEnemy(e) {
     addShake(4);
     AudioFX.hit();
 
+    if (e.type === "boss") {
+        addHitStop(0.05);
+    }
+
     spawnParticles(
         e.x + e.width / 2,
         e.y + e.height / 2,
@@ -298,7 +389,9 @@ function damageEnemy(e) {
 function killEnemy(e) {
     e.health = 0;
     e.flash = 0;
+    e.deadTimer = DEATH_FADE;
 
+    addHitStop(0.09);
     addShake(8);
     AudioFX.kill();
 
@@ -432,6 +525,9 @@ function strikePlayer(e) {
 export function updateEnemies(dt) {
     for (const e of enemies) {
         if (e.health <= 0) {
+            if (e.deadTimer > 0) {
+                e.deadTimer -= dt;
+            }
             continue;
         }
 
@@ -473,6 +569,15 @@ export function updateEnemies(dt) {
         e.facing = dx >= 0 ? "right" : "left";
 
         updateEnemyState(e, dx, dy, dist, dt);
+    }
+
+    // Remove fully faded corpses (prevents dead enemies from
+    // accumulating across waves).
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (enemies[i].health <= 0 && enemies[i].deadTimer <= 0) {
+            enemies.splice(i, 1);
+        }
     }
 }
 
@@ -601,7 +706,7 @@ function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
 
-function drawSwordSwing(x, y) {
+function drawSwordSwing(gctx, x, y) {
     const progress = 1 - player.attackTimer / ATTACK_DURATION;
     const sweep = -1.2 + easeOutCubic(progress) * 2.4;
 
@@ -617,25 +722,165 @@ function drawSwordSwing(x, y) {
         baseAngle = Math.PI / 2;
     }
 
+    gctx.save();
+    gctx.translate(x + 20, y + 22);
+    gctx.rotate(baseAngle + sweep);
+
+    gctx.fillStyle = "#777";
+    gctx.fillRect(0, -3, 34, 6);
+
+    gctx.fillStyle = "#bbb";
+    gctx.fillRect(2, -3, 30, 2);
+
+    gctx.fillStyle = "#151515";
+    gctx.fillRect(-2, 2, 7, 3);
+
+    gctx.restore();
+}
+
+// Draws the full player sprite (body + sword) with a given context,
+// so it can be re-rendered through the pixelation pass while dashing.
+
+function drawPlayerSprite(gctx, x, y) {
+    const swinging = player.attackTimer > 0;
+
+    gctx.fillStyle = "#151515";
+    gctx.fillRect(x + 4, y + 18, 8, 18);
+
+    gctx.fillStyle = "#242424";
+    gctx.fillRect(x + 9, y + 31, 9, 9);
+    gctx.fillRect(x + 23, y + 31, 9, 9);
+
+    gctx.fillStyle = "#111";
+    gctx.fillRect(x + 7, y + 38, 11, 4);
+    gctx.fillRect(x + 22, y + 38, 13, 4);
+
+    gctx.fillStyle = "#292929";
+    gctx.fillRect(x + 8, y + 15, 25, 19);
+
+    gctx.fillStyle = "#444";
+    gctx.fillRect(x + 10, y + 17, 5, 12);
+    gctx.fillRect(x + 25, y + 17, 5, 12);
+
+    gctx.fillStyle = "#c58b65";
+    gctx.fillRect(x + 10, y + 4, 20, 16);
+
+    gctx.fillStyle = "#080808";
+    gctx.fillRect(x + 7, y + 1, 26, 8);
+    gctx.fillRect(x + 5, y + 5, 7, 12);
+    gctx.fillRect(x + 28, y + 5, 6, 10);
+
+    gctx.fillRect(x + 8, y, 7, 5);
+    gctx.fillRect(x + 17, y - 2, 7, 6);
+    gctx.fillRect(x + 25, y, 7, 5);
+
+    gctx.fillStyle = "#eee";
+    gctx.fillRect(x + 13, y + 10, 4, 2);
+    gctx.fillRect(x + 23, y + 10, 4, 2);
+
+    gctx.fillStyle = "#242424";
+    gctx.fillRect(x + 2, y + 17, 8, 17);
+    gctx.fillRect(x + 31, y + 16, 8, 18);
+
+    if (swinging) {
+
+        drawSwordSwing(gctx, x, y);
+
+    } else {
+
+        if (player.direction === "right") {
+
+            gctx.fillStyle = "#777";
+            gctx.fillRect(x + 38, y + 10, 28, 6);
+
+            gctx.fillStyle = "#bbb";
+            gctx.fillRect(x + 40, y + 10, 24, 2);
+
+            gctx.fillStyle = "#151515";
+            gctx.fillRect(x + 37, y + 17, 8, 4);
+        }
+
+        if (player.direction === "left") {
+
+            gctx.fillStyle = "#777";
+            gctx.fillRect(x - 28, y + 10, 28, 6);
+
+            gctx.fillStyle = "#bbb";
+            gctx.fillRect(x - 26, y + 10, 24, 2);
+
+            gctx.fillStyle = "#151515";
+            gctx.fillRect(x - 5, y + 17, 8, 4);
+        }
+
+        if (player.direction === "up") {
+
+            gctx.fillStyle = "#777";
+            gctx.fillRect(x + 17, y - 27, 6, 27);
+
+            gctx.fillStyle = "#bbb";
+            gctx.fillRect(x + 17, y - 25, 2, 23);
+
+            gctx.fillStyle = "#151515";
+            gctx.fillRect(x + 14, y - 3, 12, 5);
+        }
+
+        if (player.direction === "down") {
+
+            gctx.fillStyle = "#777";
+            gctx.fillRect(x + 17, y + 40, 6, 27);
+
+            gctx.fillStyle = "#bbb";
+            gctx.fillRect(x + 19, y + 42, 2, 23);
+
+            gctx.fillStyle = "#151515";
+            gctx.fillRect(x + 14, y + 38, 12, 5);
+        }
+    }
+}
+
+// Offscreen canvases for the dash "pixel air" effect: the sprite is
+// downsampled to 16x16 and scaled back up with smoothing off, so the
+// player reads as a scatter of chunky pixels while dashing.
+
+const PIXEL_CANVAS_SIZE = 96;
+const PIXEL_GRID = 16;
+const PIXEL_OFFSET_X = 29;
+const PIXEL_OFFSET_Y = 28;
+
+const pixelCanvas = document.createElement("canvas");
+pixelCanvas.width = PIXEL_CANVAS_SIZE;
+pixelCanvas.height = PIXEL_CANVAS_SIZE;
+const pixelCtx = pixelCanvas.getContext("2d");
+
+const pixelSmallCanvas = document.createElement("canvas");
+pixelSmallCanvas.width = PIXEL_GRID;
+pixelSmallCanvas.height = PIXEL_GRID;
+const pixelSmallCtx = pixelSmallCanvas.getContext("2d");
+
+function drawPixelatedPlayer(x, y) {
+    pixelCtx.clearRect(0, 0, PIXEL_CANVAS_SIZE, PIXEL_CANVAS_SIZE);
+    drawPlayerSprite(pixelCtx, x - PIXEL_OFFSET_X, y - PIXEL_OFFSET_Y);
+
+    pixelSmallCtx.clearRect(0, 0, PIXEL_GRID, PIXEL_GRID);
+    pixelSmallCtx.drawImage(pixelCanvas, 0, 0, PIXEL_GRID, PIXEL_GRID);
+
     ctx.save();
-    ctx.translate(x + 20, y + 22);
-    ctx.rotate(baseAngle + sweep);
-
-    ctx.fillStyle = "#777";
-    ctx.fillRect(0, -3, 34, 6);
-
-    ctx.fillStyle = "#bbb";
-    ctx.fillRect(2, -3, 30, 2);
-
-    ctx.fillStyle = "#151515";
-    ctx.fillRect(-2, 2, 7, 3);
-
+    ctx.globalAlpha = 0.9;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+        pixelSmallCanvas,
+        x - PIXEL_OFFSET_X,
+        y - PIXEL_OFFSET_Y,
+        PIXEL_CANVAS_SIZE,
+        PIXEL_CANVAS_SIZE
+    );
     ctx.restore();
 }
 
 export function drawPlayer(gameTime, alpha) {
     if (
         player.invuln > 0 &&
+        player.dashTimer <= 0 &&
         gameState === "playing" &&
         Math.floor(gameTime * 12) % 2 === 0
     ) {
@@ -645,99 +890,10 @@ export function drawPlayer(gameTime, alpha) {
     const x = player.x + (player.x - player.prevX) * alpha;
     const y = player.y + (player.y - player.prevY) * alpha;
 
-    const swinging = player.attackTimer > 0;
-
-    ctx.fillStyle = "#151515";
-    ctx.fillRect(x + 4, y + 18, 8, 18);
-
-    ctx.fillStyle = "#242424";
-    ctx.fillRect(x + 9, y + 31, 9, 9);
-    ctx.fillRect(x + 23, y + 31, 9, 9);
-
-    ctx.fillStyle = "#111";
-    ctx.fillRect(x + 7, y + 38, 11, 4);
-    ctx.fillRect(x + 22, y + 38, 13, 4);
-
-    ctx.fillStyle = "#292929";
-    ctx.fillRect(x + 8, y + 15, 25, 19);
-
-    ctx.fillStyle = "#444";
-    ctx.fillRect(x + 10, y + 17, 5, 12);
-    ctx.fillRect(x + 25, y + 17, 5, 12);
-
-    ctx.fillStyle = "#c58b65";
-    ctx.fillRect(x + 10, y + 4, 20, 16);
-
-    ctx.fillStyle = "#080808";
-    ctx.fillRect(x + 7, y + 1, 26, 8);
-    ctx.fillRect(x + 5, y + 5, 7, 12);
-    ctx.fillRect(x + 28, y + 5, 6, 10);
-
-    ctx.fillRect(x + 8, y, 7, 5);
-    ctx.fillRect(x + 17, y - 2, 7, 6);
-    ctx.fillRect(x + 25, y, 7, 5);
-
-    ctx.fillStyle = "#eee";
-    ctx.fillRect(x + 13, y + 10, 4, 2);
-    ctx.fillRect(x + 23, y + 10, 4, 2);
-
-    ctx.fillStyle = "#242424";
-    ctx.fillRect(x + 2, y + 17, 8, 17);
-    ctx.fillRect(x + 31, y + 16, 8, 18);
-
-    if (swinging) {
-
-        drawSwordSwing(x, y);
-
+    if (player.dashTimer > 0) {
+        drawPixelatedPlayer(x, y);
     } else {
-
-        if (player.direction === "right") {
-
-            ctx.fillStyle = "#777";
-            ctx.fillRect(x + 38, y + 10, 28, 6);
-
-            ctx.fillStyle = "#bbb";
-            ctx.fillRect(x + 40, y + 10, 24, 2);
-
-            ctx.fillStyle = "#151515";
-            ctx.fillRect(x + 37, y + 17, 8, 4);
-        }
-
-        if (player.direction === "left") {
-
-            ctx.fillStyle = "#777";
-            ctx.fillRect(x - 28, y + 10, 28, 6);
-
-            ctx.fillStyle = "#bbb";
-            ctx.fillRect(x - 26, y + 10, 24, 2);
-
-            ctx.fillStyle = "#151515";
-            ctx.fillRect(x - 5, y + 17, 8, 4);
-        }
-
-        if (player.direction === "up") {
-
-            ctx.fillStyle = "#777";
-            ctx.fillRect(x + 17, y - 27, 6, 27);
-
-            ctx.fillStyle = "#bbb";
-            ctx.fillRect(x + 17, y - 25, 2, 23);
-
-            ctx.fillStyle = "#151515";
-            ctx.fillRect(x + 14, y - 3, 12, 5);
-        }
-
-        if (player.direction === "down") {
-
-            ctx.fillStyle = "#777";
-            ctx.fillRect(x + 17, y + 40, 6, 27);
-
-            ctx.fillStyle = "#bbb";
-            ctx.fillRect(x + 19, y + 42, 2, 23);
-
-            ctx.fillStyle = "#151515";
-            ctx.fillRect(x + 14, y + 38, 12, 5);
-        }
+        drawPlayerSprite(ctx, x, y);
     }
 }
 
@@ -745,9 +901,9 @@ export function drawPlayer(gameTime, alpha) {
 // DRAW ENEMIES
 // ======================
 
-function drawEnemyBody(e) {
-    const x = e.x;
-    const y = e.y;
+function drawEnemyBody(e, ox, oy) {
+    const x = e.x + (ox || 0);
+    const y = e.y + (oy || 0);
 
     if (e.type === "grunt") {
 
@@ -915,6 +1071,12 @@ function drawEnemyBody(e) {
 export function drawEnemies(gameTime, alpha) {
     for (const e of enemies) {
         if (e.health <= 0) {
+            if (e.deadTimer > 0) {
+                const t = e.deadTimer / DEATH_FADE;
+                ctx.globalAlpha = Math.max(0, t);
+                drawEnemyBody(e, 0, (1 - t) * 10);
+                ctx.globalAlpha = 1;
+            }
             continue;
         }
 

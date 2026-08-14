@@ -1,5 +1,5 @@
 // ======================
-// INPUT (keyboard + mobile)
+// INPUT (keyboard, gamepad, mobile)
 // ======================
 
 import { gameState } from "./state.js";
@@ -8,9 +8,51 @@ import {
     triggerRestartGame,
     triggerTogglePause
 } from "./events.js";
+import { DASH_DOUBLE_TAP_WINDOW } from "./config.js";
 
 export const keys = {};
 export let attacking = false;
+
+// Edge-triggered dash request, consumed by entities.updatePlayer.
+export let dashRequested = false;
+
+const lastKeyPress = {};
+
+function requestDash() {
+    dashRequested = true;
+}
+
+export function clearDashRequest() {
+    dashRequested = false;
+}
+
+// Reads and clears the dash request; entities consume it via this
+// call so all writes to the flag stay inside this module.
+
+export function consumeDashRequest() {
+    const requested = dashRequested;
+    dashRequested = false;
+    return requested;
+}
+
+function handleKeydown(event, key) {
+    if (key === "shift") {
+        if (!event.repeat) {
+            requestDash();
+        }
+        return;
+    }
+
+    if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].indexOf(key) !== -1) {
+        const now = performance.now();
+
+        if (!event.repeat && now - (lastKeyPress[key] || 0) <= DASH_DOUBLE_TAP_WINDOW * 1000) {
+            requestDash();
+        }
+
+        lastKeyPress[key] = now;
+    }
+}
 
 document.addEventListener("keydown", function (event) {
     const key = event.key.toLowerCase();
@@ -37,6 +79,8 @@ document.addEventListener("keydown", function (event) {
     if (["arrowup", "arrowdown", "arrowleft", "arrowright"].indexOf(key) !== -1) {
         event.preventDefault();
     }
+
+    handleKeydown(event, key);
 });
 
 document.addEventListener("keyup", function (event) {
@@ -53,8 +97,71 @@ window.addEventListener("blur", function () {
         keys[key] = false;
     }
     attacking = false;
+    dashRequested = false;
     resetJoystick();
 });
+
+// ======================
+// GAMEPAD (polled once per frame)
+// ======================
+
+let padPresent = false;
+let gamepadDashHeld = false;
+let gamepadStartHeld = false;
+
+export function pollGamepad() {
+    if (!navigator.getGamepads) {
+        return;
+    }
+
+    const pads = navigator.getGamepads();
+    let found = false;
+
+    for (const pad of pads) {
+        if (!pad) {
+            continue;
+        }
+        found = true;
+
+        const ax = pad.axes[0] || 0;
+        const ay = pad.axes[1] || 0;
+        const dead = 0.3;
+
+        keys["a"] = ax < -dead;
+        keys["d"] = ax > dead;
+        keys["w"] = ay < -dead;
+        keys["s"] = ay > dead;
+
+        attacking = !!(pad.buttons[0] && pad.buttons[0].pressed);
+
+        const dashHeld = !!(pad.buttons[2] && pad.buttons[2].pressed);
+        if (dashHeld && !gamepadDashHeld) {
+            requestDash();
+        }
+        gamepadDashHeld = dashHeld;
+
+        const startHeld = !!(pad.buttons[9] && pad.buttons[9].pressed);
+        if (startHeld && !gamepadStartHeld) {
+            if (gameState === "title") {
+                triggerStartGame();
+            } else {
+                triggerTogglePause();
+            }
+        }
+        gamepadStartHeld = startHeld;
+
+        break;
+    }
+
+    if (padPresent && !found) {
+        keys["w"] = false;
+        keys["a"] = false;
+        keys["s"] = false;
+        keys["d"] = false;
+        attacking = false;
+    }
+    padPresent = found;
+}
 
 // ======================
 // MOBILE CONTROLS
@@ -63,6 +170,8 @@ window.addEventListener("blur", function () {
 const joystick = document.getElementById("joystick");
 const joystickKnob = document.getElementById("joystickKnob");
 const attackButton = document.getElementById("attackButton");
+const dashButton = document.getElementById("dashButton");
+const pauseButton = document.getElementById("pauseButton");
 
 let joystickActive = false;
 
@@ -156,4 +265,14 @@ attackButton.addEventListener("pointerup", function (event) {
 
 attackButton.addEventListener("pointercancel", function () {
     attacking = false;
+});
+
+dashButton.addEventListener("pointerdown", function (event) {
+    event.preventDefault();
+    dashButton.setPointerCapture(event.pointerId);
+    requestDash();
+});
+
+pauseButton.addEventListener("click", function () {
+    triggerTogglePause();
 });

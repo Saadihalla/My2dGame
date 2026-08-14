@@ -34,7 +34,15 @@ import {
 
 import { registerFlow } from "./events.js";
 import { AudioFX } from "./audio.js";
-import { getShake, updateFX, drawParticles, drawNumbers, drawVignette } from "./fx.js";
+import {
+    getShake,
+    updateFX,
+    drawParticles,
+    drawNumbers,
+    drawVignette,
+    tickHitStop
+} from "./fx.js";
+import { pollGamepad } from "./input.js";
 import { updateBanners, drawBanners, showBanner } from "./banners.js";
 import {
     buildLevel,
@@ -181,6 +189,10 @@ function update(dt) {
         return;
     }
 
+    if (tickHitStop(dt)) {
+        return;
+    }
+
     stats.survived += dt;
 
     if (player.invuln > 0) {
@@ -292,6 +304,8 @@ let accumulator = 0;
 function gameLoop(timestamp) {
     const frameTime = Math.min((timestamp - lastTime) / 1000, MAX_FRAME_TIME);
     lastTime = timestamp;
+
+    pollGamepad();
 
     accumulator += frameTime;
 

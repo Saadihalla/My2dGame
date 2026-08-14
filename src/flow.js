@@ -29,6 +29,7 @@ import {
 import { AudioFX } from "./audio.js";
 import { clearFX } from "./fx.js";
 import { clearBanners, showBanner } from "./banners.js";
+import { clearDashRequest } from "./input.js";
 import { buildLevel, LEVELS, currentLevel, levelIndex } from "./levels.js";
 import { player, enemies, loot, resetPlayer } from "./entities.js";
 import { setButtons, makeButton } from "./ui.js";
@@ -63,6 +64,7 @@ export function resetRun() {
 
     clearFX();
     clearBanners();
+    clearDashRequest();
 }
 
 export function startGame() {
@@ -95,6 +97,7 @@ export function togglePause() {
     } else if (gameState === "paused") {
         setGameState("playing");
         setButtons([]);
+        clearDashRequest();
     }
 }
 

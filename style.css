@@ -97,6 +97,34 @@ canvas {
     background: #333;
 }
 
+#pauseButton {
+    position: absolute;
+
+    top: 15px;
+    left: 15px;
+
+    width: 42px;
+    height: 42px;
+
+    border: 1px solid #777;
+
+    border-radius: 8px;
+
+    background: rgba(0, 0, 0, 0.7);
+
+    color: white;
+
+    font-size: 16px;
+
+    cursor: pointer;
+
+    z-index: 10;
+}
+
+#pauseButton:hover {
+    background: #333;
+}
+
 /* =========================
    MOBILE CONTROLS
    ========================= */
@@ -153,6 +181,40 @@ canvas {
     border: 2px solid rgba(255, 255, 255, 0.7);
 
     pointer-events: none;
+}
+
+/* DASH */
+
+#dashButton {
+    position: absolute;
+
+    right: 145px;
+    bottom: 35px;
+
+    width: 68px;
+    height: 68px;
+
+    border-radius: 50%;
+
+    border: 3px solid rgba(255, 255, 255, 0.6);
+
+    background: rgba(20, 80, 60, 0.75);
+
+    color: white;
+
+    font-size: 30px;
+
+    pointer-events: auto;
+
+    touch-action: none;
+
+    user-select: none;
+}
+
+#dashButton:active {
+    transform: scale(0.9);
+
+    background: rgba(30, 110, 80, 0.9);
 }
 
 /* ATTACK */

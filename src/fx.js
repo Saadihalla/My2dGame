@@ -8,6 +8,7 @@ let particles = [];
 let numbers = [];
 let shake = 0;
 let hitVignette = 0;
+let hitStop = 0;
 
 export function spawnParticles(x, y, count, colors, speed) {
     for (let i = 0; i < count; i++) {
@@ -43,6 +44,21 @@ export function addShake(amount) {
 
 export function setHitVignette() {
     hitVignette = 1;
+}
+
+// Brief full-freeze for combat impact (kills, boss hits). While the
+// freeze is active the game update loop pauses everything.
+
+export function addHitStop(amount) {
+    hitStop = Math.max(hitStop, amount);
+}
+
+export function tickHitStop(dt) {
+    if (hitStop > 0) {
+        hitStop -= dt;
+        return true;
+    }
+    return false;
 }
 
 export function updateFX(dt) {
@@ -84,6 +100,7 @@ export function clearFX() {
     numbers.length = 0;
     shake = 0;
     hitVignette = 0;
+    hitStop = 0;
 }
 
 export function getShake() {

@@ -81,6 +81,12 @@ export const AudioFX = {
         this.noise(0.12, 0.3, 1600);
     },
 
+    dash: function () {
+        this.ensure();
+        this.noise(0.18, 0.3, 2200);
+        this.tone(420, 0.16, "sine", 0.18, 950);
+    },
+
     hit: function () {
         this.ensure();
         this.tone(200, 0.1, "square", 0.25, 80);

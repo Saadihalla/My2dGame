@@ -29,6 +29,14 @@ export const ATTACK_COOLDOWN = 0.35;
 export const ATTACK_BASE_DAMAGE = 20;
 export const ATTACK_BASE_RANGE = 30;
 
+export const DASH_SPEED = 660;
+export const DASH_DURATION = 0.2;
+export const DASH_IFRAMES = 0.32;
+export const DASH_COOLDOWN = 0.9;
+export const DASH_DOUBLE_TAP_WINDOW = 0.22;
+
+export const DEATH_FADE = 0.5;
+
 export const POTION_HEAL = 30;
 
 export const LEVEL_XP_BASE = 40;
