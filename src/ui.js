@@ -4,6 +4,7 @@
 
 import { canvas, ctx, VIEW_WIDTH, VIEW_HEIGHT, DASH_COOLDOWN } from "./config.js";
 import { gameState, gameTime, stats, wave, waveState, waveTimer, highScore, newHighScore } from "./state.js";
+import { currentPlayer } from "./auth.js";
 import { player, enemies, ENEMY_TYPES } from "./entities.js";
 import {
     COLORS,
@@ -236,6 +237,10 @@ export function drawOverlays() {
 
         if (highScore > 0) {
             drawText(ctx, "BEST " + highScore, VIEW_WIDTH / 2, 180, 10, COLORS.gold, "center");
+        }
+
+        if (currentPlayer) {
+            drawText(ctx, "PLAYER: " + currentPlayer.username, VIEW_WIDTH / 2, 196, 9, "#7ec8ff", "center");
         }
 
         for (const button of uiButtons) {

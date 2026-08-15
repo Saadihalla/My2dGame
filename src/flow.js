@@ -40,6 +40,7 @@ import { buildLevel, LEVELS, currentLevel, levelIndex } from "./levels.js";
 import { player, enemies, loot, projectiles, resetPlayer } from "./entities.js";
 import { setButtons, makeButton, makeCard } from "./ui.js";
 import { rollUpgradeOptions } from "./logic/upgrades.js";
+import { openAuthModal } from "./auth.js";
 
 export function resetRun() {
     buildLevel(0);
@@ -113,8 +114,9 @@ export function goTitle() {
     loot.length = 0;
     projectiles.length = 0;
     setButtons([
-        makeButton("START", startGame, 250),
-        makeButton("SETTINGS", openSettings, 320)
+        makeButton("START", startGame, 220),
+        makeButton("ACCOUNT", openAuthModal, 280),
+        makeButton("SETTINGS", openSettings, 340)
     ]);
 }
 

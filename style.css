@@ -256,3 +256,118 @@ canvas {
         display: block;
     }
 }
+
+/* =========================
+   AUTH MODAL
+   ========================= */
+
+.auth-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.auth-content {
+    background: #151515;
+    border: 2px solid #555;
+    border-radius: 12px;
+    padding: 30px;
+    width: 380px;
+    max-width: 90%;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+}
+
+.auth-content h2 {
+    font-size: 16px;
+    color: #ffd75a;
+    margin-bottom: 20px;
+}
+
+.auth-text {
+    font-size: 9px;
+    color: #ccc;
+    margin-bottom: 6px;
+}
+
+.auth-highlight {
+    font-size: 12px;
+    color: #7ec8ff;
+    margin-bottom: 8px;
+}
+
+.auth-group {
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.auth-group label {
+    display: block;
+    font-size: 8px;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+
+.auth-group input {
+    width: 100%;
+    padding: 10px;
+    background: #0d0d0d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+}
+
+.auth-group input:focus {
+    outline: none;
+    border-color: #ffd75a;
+}
+
+.auth-message {
+    font-size: 8px;
+    min-height: 20px;
+    margin-bottom: 16px;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.auth-btn {
+    background: rgba(255, 215, 90, 0.15);
+    border: 1px solid #ffd75a;
+    color: #ffd75a;
+    padding: 10px 16px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.auth-btn:hover {
+    background: rgba(255, 215, 90, 0.3);
+}
+
+.auth-close-btn {
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid #666;
+    color: #aaa;
+    padding: 8px 16px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.auth-close-btn:hover {
+    background: #333;
+    color: white;
+}

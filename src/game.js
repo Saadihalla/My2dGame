@@ -87,6 +87,7 @@ import {
     openLevelUpChoice,
     chooseUpgrade
 } from "./flow.js";
+import { initAuthUI } from "./auth.js";
 import { waveEnemyList } from "./logic/waves.js";
 import { findSpawnPoints } from "./logic/spawn.js";
 
@@ -366,6 +367,7 @@ function gameLoop(timestamp) {
 }
 
 buildLevel(0);
+initAuthUI();
 goTitle();
 
 // Kick off the asset pipeline; the game runs in procedural fallback until
