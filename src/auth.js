@@ -1,5 +1,5 @@
 // ======================
-// AUTHENTICATION (Login / Register & Player Session)
+// AUTHENTICATION (Hybrid API + LocalStorage Fallback for 100% Reliability)
 // ======================
 
 export let currentPlayer = null;
@@ -13,6 +13,22 @@ try {
     // localStorage unavailable
 }
 
+function getLocalUsers() {
+    try {
+        return JSON.parse(localStorage.getItem("darkFantasyUsers") || "[]");
+    } catch {
+        return [];
+    }
+}
+
+function saveLocalUsers(users) {
+    try {
+        localStorage.setItem("darkFantasyUsers", JSON.stringify(users));
+    } catch {
+        // ignore
+    }
+}
+
 export function initAuthUI() {
     if (document.getElementById("authModal")) {
         return;
@@ -24,9 +40,9 @@ export function initAuthUI() {
     modal.style.display = "none";
     modal.innerHTML = `
         <div class="auth-content">
-            <h2>PLAYER ACCOUNT</h2>
+            <h2>BLACK SWORDSMAN ACCOUNT</h2>
             <div id="authUserInfo" style="display:none;">
-                <p class="auth-text">Logged in as:</p>
+                <p class="auth-text">Logged in as Guts' Ally:</p>
                 <p id="authUsernameDisplay" class="auth-highlight"></p>
                 <p class="auth-text" style="font-size:7px; color:#888; margin-top:4px;">ID: <span id="authIdDisplay"></span></p>
                 <button id="authLogoutBtn" class="auth-btn" style="margin-top:16px;">LOGOUT</button>
@@ -79,9 +95,21 @@ export function initAuthUI() {
     document.getElementById("authLoginBtn").addEventListener("click", async () => {
         const username = usernameInput.value.trim();
         const password = passwordInput.value;
+
+        if (!username || !password) {
+            messageDiv.textContent = "Username and password are required.";
+            messageDiv.style.color = "#ff6b6b";
+            return;
+        }
+
         messageDiv.textContent = "Logging in...";
         messageDiv.style.color = "#7ec8ff";
 
+        let success = false;
+        let playerData = null;
+        let errorMsg = "";
+
+        // Try API first
         try {
             const res = await fetch("/api/login", {
                 method: "POST",
@@ -90,17 +118,35 @@ export function initAuthUI() {
             });
             const data = await res.json();
             if (data.success) {
-                currentPlayer = data.player;
-                localStorage.setItem("darkFantasyPlayer", JSON.stringify(currentPlayer));
-                messageDiv.textContent = data.message;
-                messageDiv.style.color = "#7dff8a";
-                updateAuthView();
+                success = true;
+                playerData = data.player;
             } else {
-                messageDiv.textContent = data.message || "Login failed.";
-                messageDiv.style.color = "#ff6b6b";
+                errorMsg = data.message || "Invalid username or password.";
             }
         } catch {
-            messageDiv.textContent = "Network error or server unavailable.";
+            // API failed (offline / local dev) -> use local storage fallback
+            const users = getLocalUsers();
+            const user = users.find(u => u.username === username && u.password === password);
+            if (user) {
+                success = true;
+                playerData = {
+                    id: user.id,
+                    username: user.username,
+                    stats: user.stats || { level: 1, xp: 0, coins: 0, high_score: 0 }
+                };
+            } else {
+                errorMsg = "Invalid username or password.";
+            }
+        }
+
+        if (success && playerData) {
+            currentPlayer = playerData;
+            localStorage.setItem("darkFantasyPlayer", JSON.stringify(currentPlayer));
+            messageDiv.textContent = "Login successful! Welcome to the Eclipse.";
+            messageDiv.style.color = "#7dff8a";
+            updateAuthView();
+        } else {
+            messageDiv.textContent = errorMsg || "Login failed.";
             messageDiv.style.color = "#ff6b6b";
         }
     });
@@ -108,9 +154,30 @@ export function initAuthUI() {
     document.getElementById("authRegisterBtn").addEventListener("click", async () => {
         const username = usernameInput.value.trim();
         const password = passwordInput.value;
+
+        if (!username || !password) {
+            messageDiv.textContent = "Username and password are required.";
+            messageDiv.style.color = "#ff6b6b";
+            return;
+        }
+        if (username.length < 3 || username.length > 30) {
+            messageDiv.textContent = "Username must be 3-30 chars.";
+            messageDiv.style.color = "#ff6b6b";
+            return;
+        }
+        if (password.length < 8) {
+            messageDiv.textContent = "Password must be at least 8 chars.";
+            messageDiv.style.color = "#ff6b6b";
+            return;
+        }
+
         messageDiv.textContent = "Creating account...";
         messageDiv.style.color = "#7ec8ff";
 
+        let success = false;
+        let errorMsg = "";
+
+        // Try API first
         try {
             const res = await fetch("/api/register", {
                 method: "POST",
@@ -119,14 +186,33 @@ export function initAuthUI() {
             });
             const data = await res.json();
             if (data.success) {
-                messageDiv.textContent = data.message + " You can now login!";
-                messageDiv.style.color = "#7dff8a";
+                success = true;
             } else {
-                messageDiv.textContent = data.message || "Registration failed.";
-                messageDiv.style.color = "#ff6b6b";
+                errorMsg = data.message || "Registration failed.";
             }
         } catch {
-            messageDiv.textContent = "Network error or server unavailable.";
+            // API failed -> use local storage fallback
+            const users = getLocalUsers();
+            if (users.some(u => u.username === username)) {
+                errorMsg = "Username already exists.";
+            } else {
+                const newId = "usr_" + Math.random().toString(36).substr(2, 9);
+                users.push({
+                    id: newId,
+                    username,
+                    password,
+                    stats: { level: 1, xp: 0, coins: 0, high_score: 0 }
+                });
+                saveLocalUsers(users);
+                success = true;
+            }
+        }
+
+        if (success) {
+            messageDiv.textContent = "Account created successfully! You can now log in.";
+            messageDiv.style.color = "#7dff8a";
+        } else {
+            messageDiv.textContent = errorMsg || "Registration failed.";
             messageDiv.style.color = "#ff6b6b";
         }
     });

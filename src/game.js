@@ -196,14 +196,14 @@ function updateWaves(dt) {
 // ======================
 
 function update(dt) {
+    if (gameState !== "playing") {
+        return;
+    }
+
     addGameTime(dt);
 
     updateFX(dt);
     updateBanners(dt);
-
-    if (gameState !== "playing") {
-        return;
-    }
 
     if (tickHitStop(dt)) {
         return;
@@ -353,6 +353,13 @@ function gameLoop(timestamp) {
     lastTime = timestamp;
 
     pollGamepad();
+
+    if (gameState !== "playing") {
+        accumulator = 0;
+        draw(1);
+        requestAnimationFrame(gameLoop);
+        return;
+    }
 
     accumulator += frameTime;
 

@@ -998,7 +998,7 @@ function easeOutCubic(t) {
 
 function drawSwordSwing(gctx, x, y) {
     const progress = 1 - player.attackTimer / ATTACK_DURATION;
-    const sweep = -1.2 + easeOutCubic(progress) * 2.4;
+    const sweep = -1.4 + easeOutCubic(progress) * 2.8;
 
     let baseAngle = 0;
 
@@ -1016,19 +1016,26 @@ function drawSwordSwing(gctx, x, y) {
     gctx.translate(x + 20, y + 22);
     gctx.rotate(baseAngle + sweep);
 
-    gctx.fillStyle = "#777";
-    gctx.fillRect(0, -3, 34, 6);
+    // The Dragonslayer (Massive Berserk Greatsword Swing)
+    gctx.fillStyle = "#222";
+    gctx.fillRect(-2, -6, 42, 12);
 
-    gctx.fillStyle = "#bbb";
-    gctx.fillRect(2, -3, 30, 2);
+    gctx.fillStyle = "#444";
+    gctx.fillRect(2, -4, 38, 8);
 
-    gctx.fillStyle = "#151515";
-    gctx.fillRect(-2, 2, 7, 3);
+    gctx.fillStyle = "#888";
+    gctx.fillRect(6, -2, 32, 4);
+
+    // Heavy crossguard & hilt
+    gctx.fillStyle = "#111";
+    gctx.fillRect(-6, -9, 8, 18);
+    gctx.fillStyle = "#a11";
+    gctx.fillRect(-8, -3, 6, 6);
 
     gctx.restore();
 }
 
-// Draws the full player sprite (body + sword) with a given context,
+// Draws the full player sprite (Guts / Black Swordsman + Dragonslayer) with a given context,
 // so it can be re-rendered through the pixelation pass while dashing.
 
 function drawPlayerSprite(gctx, x, y) {
@@ -1066,43 +1073,48 @@ function drawPlayerSprite(gctx, x, y) {
 
     const swinging = player.attackTimer > 0;
 
+    // Guts - Black Swordsman / Berserker Armor style
+    // Cape / Cloak (Dark/Crimson interior)
+    gctx.fillStyle = "#7a1111";
+    gctx.fillRect(x + 2, y + 16, 10, 18);
+
+    // Body / Black Armor
+    gctx.fillStyle = "#1a1a1a";
+    gctx.fillRect(x + 8, y + 15, 24, 20);
+
+    // Armor Plates / Pauldrons
+    gctx.fillStyle = "#333";
+    gctx.fillRect(x + 10, y + 16, 6, 12);
+    gctx.fillRect(x + 24, y + 16, 6, 12);
+
+    // Belt & Leather Straps
+    gctx.fillStyle = "#5c3a21";
+    gctx.fillRect(x + 9, y + 27, 22, 4);
+
+    // Pants & Boots
     gctx.fillStyle = "#151515";
-    gctx.fillRect(x + 4, y + 18, 8, 18);
+    gctx.fillRect(x + 10, y + 33, 8, 8);
+    gctx.fillRect(x + 22, y + 33, 8, 8);
 
-    gctx.fillStyle = "#242424";
-    gctx.fillRect(x + 9, y + 31, 9, 9);
-    gctx.fillRect(x + 23, y + 31, 9, 9);
-
-    gctx.fillStyle = "#111";
-    gctx.fillRect(x + 7, y + 38, 11, 4);
-    gctx.fillRect(x + 22, y + 38, 13, 4);
-
-    gctx.fillStyle = "#292929";
-    gctx.fillRect(x + 8, y + 15, 25, 19);
-
-    gctx.fillStyle = "#444";
-    gctx.fillRect(x + 10, y + 17, 5, 12);
-    gctx.fillRect(x + 25, y + 17, 5, 12);
-
+    // Head / Face (Guts: stern face, scar, spiky black hair)
     gctx.fillStyle = "#c58b65";
-    gctx.fillRect(x + 10, y + 4, 20, 16);
+    gctx.fillRect(x + 10, y + 5, 20, 12);
 
-    gctx.fillStyle = "#080808";
-    gctx.fillRect(x + 7, y + 1, 26, 8);
-    gctx.fillRect(x + 5, y + 5, 7, 12);
-    gctx.fillRect(x + 28, y + 5, 6, 10);
+    // Spiky Black Hair
+    gctx.fillStyle = "#0d0d0d";
+    gctx.fillRect(x + 8, y + 1, 24, 6);
+    gctx.fillRect(x + 6, y + 4, 6, 8);
+    gctx.fillRect(x + 28, y + 4, 6, 8);
+    gctx.fillRect(x + 12, y - 2, 8, 5);
 
-    gctx.fillRect(x + 8, y, 7, 5);
-    gctx.fillRect(x + 17, y - 2, 7, 6);
-    gctx.fillRect(x + 25, y, 7, 5);
+    // Scar across nose / eye
+    gctx.fillStyle = "#9c6b4e";
+    gctx.fillRect(x + 17, y + 9, 5, 2);
 
-    gctx.fillStyle = "#eee";
-    gctx.fillRect(x + 13, y + 10, 4, 2);
-    gctx.fillRect(x + 23, y + 10, 4, 2);
-
-    gctx.fillStyle = "#242424";
-    gctx.fillRect(x + 2, y + 17, 8, 17);
-    gctx.fillRect(x + 31, y + 16, 8, 18);
+    // Arms
+    gctx.fillStyle = "#222";
+    gctx.fillRect(x + 3, y + 17, 7, 16);
+    gctx.fillRect(x + 30, y + 17, 7, 16);
 
     if (swinging) {
 
@@ -1110,52 +1122,65 @@ function drawPlayerSprite(gctx, x, y) {
 
     } else {
 
+        // The Dragonslayer (Massive Greatsword resting/ready)
         if (player.direction === "right") {
 
-            gctx.fillStyle = "#777";
-            gctx.fillRect(x + 38, y + 10, 28, 6);
+            gctx.fillStyle = "#222";
+            gctx.fillRect(x + 36, y + 6, 32, 8);
 
-            gctx.fillStyle = "#bbb";
-            gctx.fillRect(x + 40, y + 10, 24, 2);
+            gctx.fillStyle = "#444";
+            gctx.fillRect(x + 38, y + 8, 28, 4);
 
-            gctx.fillStyle = "#151515";
-            gctx.fillRect(x + 37, y + 17, 8, 4);
+            gctx.fillStyle = "#888";
+            gctx.fillRect(x + 42, y + 9, 22, 2);
+
+            gctx.fillStyle = "#111";
+            gctx.fillRect(x + 34, y + 4, 6, 12);
         }
 
         if (player.direction === "left") {
 
-            gctx.fillStyle = "#777";
-            gctx.fillRect(x - 28, y + 10, 28, 6);
+            gctx.fillStyle = "#222";
+            gctx.fillRect(x - 32, y + 6, 32, 8);
 
-            gctx.fillStyle = "#bbb";
-            gctx.fillRect(x - 26, y + 10, 24, 2);
+            gctx.fillStyle = "#444";
+            gctx.fillRect(x - 30, y + 8, 28, 4);
 
-            gctx.fillStyle = "#151515";
-            gctx.fillRect(x - 5, y + 17, 8, 4);
+            gctx.fillStyle = "#888";
+            gctx.fillRect(x - 26, y + 9, 22, 2);
+
+            gctx.fillStyle = "#111";
+            gctx.fillRect(x - 4, y + 4, 6, 12);
         }
 
         if (player.direction === "up") {
 
-            gctx.fillStyle = "#777";
-            gctx.fillRect(x + 17, y - 27, 6, 27);
+            gctx.fillStyle = "#222";
+            gctx.fillRect(x + 16, y - 32, 8, 32);
 
-            gctx.fillStyle = "#bbb";
-            gctx.fillRect(x + 17, y - 25, 2, 23);
+            gctx.fillStyle = "#444";
+            gctx.fillRect(x + 18, y - 30, 4, 28);
 
-            gctx.fillStyle = "#151515";
-            gctx.fillRect(x + 14, y - 3, 12, 5);
+            gctx.fillStyle = "#888";
+            gctx.fillRect(x + 19, y - 26, 2, 22);
+
+            gctx.fillStyle = "#111";
+            gctx.fillRect(x + 14, y - 4, 12, 6);
         }
 
         if (player.direction === "down") {
 
-            gctx.fillStyle = "#777";
-            gctx.fillRect(x + 17, y + 40, 6, 27);
+            gctx.fillStyle = "#222";
+            gctx.fillRect(x + 16, y + 36, 8, 32);
 
-            gctx.fillStyle = "#bbb";
-            gctx.fillRect(x + 19, y + 42, 2, 23);
+            gctx.fillStyle = "#444";
+            gctx.fillRect(x + 18, y + 38, 4, 28);
 
-            gctx.fillStyle = "#151515";
-            gctx.fillRect(x + 14, y + 38, 12, 5);
+            gctx.fillStyle = "#888";
+            gctx.fillRect(x + 19, y + 42, 2, 22);
+
+            gctx.fillStyle = "#111";
+            gctx.fillRect(x + 14, y + 34, 12, 6);
         }
     }
 }
