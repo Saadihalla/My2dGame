@@ -170,17 +170,21 @@ export function drawHUD() {
 
     // ----- Right panel: score / wave / time -----
 
-    const rx = VIEW_WIDTH - 216;
-    drawPanel(ctx, rx, 6, 200, 68);
+    const panelW = 164;
+    const rx = VIEW_WIDTH - panelW - 16;
+    const cx = rx + panelW / 2;
+    drawPanel(ctx, rx, 6, panelW, 72);
 
-    drawText(ctx, "SCORE " + stats.score, VIEW_WIDTH - 16, 20, 12, COLORS.gold, "right");
-    drawText(ctx, "WAVE " + Math.max(1, wave), VIEW_WIDTH - 16, 38, 9, COLORS.text, "right");
+    drawText(ctx, "SCORE " + stats.score, cx, 20, 11, COLORS.gold, "center");
+    drawText(ctx, "WAVE " + Math.max(1, wave), cx, 36, 9, COLORS.text, "center");
 
     const next = nextWaveCountdown();
     if (next) {
-        drawText(ctx, next, VIEW_WIDTH - 16, 52, 7, "#7ec8ff", "right");
+        drawText(ctx, next, cx, 50, 7, "#7ec8ff", "center");
+        drawText(ctx, stats.kills + " KILLS", cx, 64, 7, COLORS.dim, "center");
+    } else {
+        drawText(ctx, stats.kills + " KILLS", cx, 52, 7, COLORS.dim, "center");
     }
-    drawText(ctx, stats.kills + " KILLS", VIEW_WIDTH - 16, 66, 7, COLORS.dim, "right");
 }
 
 function nextWaveCountdown() {
