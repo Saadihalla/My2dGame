@@ -101,7 +101,7 @@ function drawButton(button) {
 export function drawHUD() {
     const barWidth = 170;
     const barHeight = 12;
-    const x = 16;
+    const x = 64;
     const y = 14;
 
     // ----- Left panel: health / xp / dash -----
