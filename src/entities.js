@@ -1039,38 +1039,6 @@ function drawSwordSwing(gctx, x, y) {
 // so it can be re-rendered through the pixelation pass while dashing.
 
 function drawPlayerSprite(gctx, x, y) {
-    if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
-        const animState = player.animState || "idle";
-        const animTime = player.animTime || 0;
-        const frameData = getAnimationFrame(Assets.spritesheetDef, "player", animState, animTime);
-
-        if (frameData) {
-            const frame = frameData.frame;
-            const anchor = frameData.anchor;
-
-            gctx.save();
-            if (player.direction === "left") {
-                gctx.translate(x + player.width / 2, 0);
-                gctx.scale(-1, 1);
-                gctx.translate(-(x + player.width / 2), 0);
-            }
-
-            gctx.imageSmoothingEnabled = false;
-            const s = frameData.scale || 1;
-            const dx = x + player.width / 2 - anchor.x * s;
-            const dy = y + player.height / 2 - anchor.y * s;
-
-            gctx.drawImage(
-                Assets.spritesheet,
-                frame.x, frame.y, frame.w, frame.h,
-                dx, dy, frame.w * s, frame.h * s
-            );
-
-            gctx.restore();
-            return;
-        }
-    }
-
     const swinging = player.attackTimer > 0;
 
     // Guts - Black Swordsman / Berserker Armor style
