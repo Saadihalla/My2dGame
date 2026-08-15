@@ -150,13 +150,28 @@ export function drawHUD() {
         drawText(ctx, "GEAR", 18, VIEW_HEIGHT - 44, 7, COLORS.dim);
     }
 
+    // ----- Top-center panel: score / wave / time -----
+
+    const panelW = 240;
+    const rx = VIEW_WIDTH / 2 - panelW / 2;
+    const cx = VIEW_WIDTH / 2;
+    drawPanel(ctx, rx, 6, panelW, 58);
+
+    drawText(ctx, "SCORE " + stats.score, cx, 18, 11, COLORS.gold, "center");
+    drawText(ctx, "WAVE " + Math.max(1, wave) + " · " + stats.kills + " KILLS", cx, 34, 8, COLORS.text, "center");
+
+    const next = nextWaveCountdown();
+    if (next) {
+        drawText(ctx, next, cx, 48, 7, "#7ec8ff", "center");
+    }
+
     // ----- Top-center: boss health bar -----
 
     const boss = enemies.find((e) => e.type === "boss" && e.health > 0);
     if (boss) {
         const bw = 300;
         const bx = VIEW_WIDTH / 2 - bw / 2;
-        const by = 12;
+        const by = 68;
 
         drawPanel(ctx, bx - 8, by - 8, bw + 16, 32);
 
@@ -166,24 +181,6 @@ export function drawHUD() {
             Math.max(0, boss.health / boss.maxHealth),
             "#ff5a5a", "#6a1010"
         );
-    }
-
-    // ----- Right panel: score / wave / time -----
-
-    const panelW = 164;
-    const rx = VIEW_WIDTH - panelW - 16;
-    const cx = rx + panelW / 2;
-    drawPanel(ctx, rx, 6, panelW, 72);
-
-    drawText(ctx, "SCORE " + stats.score, cx, 20, 11, COLORS.gold, "center");
-    drawText(ctx, "WAVE " + Math.max(1, wave), cx, 36, 9, COLORS.text, "center");
-
-    const next = nextWaveCountdown();
-    if (next) {
-        drawText(ctx, next, cx, 50, 7, "#7ec8ff", "center");
-        drawText(ctx, stats.kills + " KILLS", cx, 64, 7, COLORS.dim, "center");
-    } else {
-        drawText(ctx, stats.kills + " KILLS", cx, 52, 7, COLORS.dim, "center");
     }
 }
 
