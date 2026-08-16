@@ -170,18 +170,58 @@ export function drawHUD() {
 
     // ----- Right panel: score / wave / time -----
 
-    const rx = VIEW_WIDTH - 216;
-    drawPanel(ctx, rx, 6, 200, 68);
+const panelWidth = 200;
+const panelHeight = 68;
+const rx = VIEW_WIDTH - panelWidth - 6;
 
-    drawText(ctx, "SCORE " + stats.score, VIEW_WIDTH - 16, 20, 12, COLORS.gold, "right");
-    drawText(ctx, "WAVE " + Math.max(1, wave), VIEW_WIDTH - 16, 38, 9, COLORS.text, "right");
+drawPanel(ctx, rx, 6, panelWidth, panelHeight);
 
-    const next = nextWaveCountdown();
-    if (next) {
-        drawText(ctx, next, VIEW_WIDTH - 16, 52, 7, "#7ec8ff", "right");
-    }
-    drawText(ctx, stats.kills + " KILLS", VIEW_WIDTH - 16, 66, 7, COLORS.dim, "right");
+// Center text inside the panel
+const centerX = rx + panelWidth / 2;
+
+drawText(
+    ctx,
+    "SCORE " + stats.score,
+    centerX,
+    20,
+    12,
+    COLORS.gold,
+    "center"
+);
+
+drawText(
+    ctx,
+    "WAVE " + Math.max(1, wave),
+    centerX,
+    38,
+    9,
+    COLORS.text,
+    "center"
+);
+
+const next = nextWaveCountdown();
+
+if (next) {
+    drawText(
+        ctx,
+        next,
+        centerX,
+        52,
+        7,
+        "#7ec8ff",
+        "center"
+    );
 }
+
+drawText(
+    ctx,
+    stats.kills + " KILLS",
+    centerX,
+    66,
+    7,
+    COLORS.dim,
+    "center"
+);
 
 function nextWaveCountdown() {
     if (waveState === "break") {
@@ -191,6 +231,7 @@ function nextWaveCountdown() {
         return "PORTAL OPEN " + Math.ceil(waveTimer) + "s";
     }
     return "";
+}
 }
 
 // ======================
