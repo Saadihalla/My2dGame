@@ -55,7 +55,10 @@ export function drawBanners() {
 
         drawPanel(ctx, VIEW_WIDTH / 2 - 175, y - 34 + offset, 350, 62);
 
+        ctx.shadowColor = "rgba(255, 215, 90, 0.55)";
+        ctx.shadowBlur = 12;
         drawText(ctx, banner.text, VIEW_WIDTH / 2, y + offset, 15, "#ffffff", "center");
+        ctx.shadowBlur = 0;
 
         if (banner.sub) {
             drawText(ctx, banner.sub, VIEW_WIDTH / 2, y + 24 + offset, 8, "#dddddd", "center");

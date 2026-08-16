@@ -253,6 +253,17 @@ function drawPortal(gameTime) {
     ctx.fillStyle = gradient;
     ctx.fillRect(px - 44, py - 44, 88, 88);
 
+    // Orbiting embers around the rim
+    for (let i = 0; i < 5; i++) {
+        const angle = gameTime * 2.4 + (i / 5) * Math.PI * 2;
+        const orbit = 30 + pulse * 6;
+        const sx = px + Math.cos(angle) * orbit;
+        const sy = py + Math.sin(angle) * orbit * 0.8;
+        ctx.globalAlpha = 0.7 + pulse * 0.3;
+        ctx.fillStyle = i % 2 === 0 ? "#ffe36b" : "#ff9d22";
+        ctx.fillRect(sx - 2, sy - 2, 4, 4);
+    }
+
     ctx.restore();
 
     ctx.fillStyle = "#fff3c4";
@@ -295,9 +306,20 @@ function draw(alpha) {
     const centerX = playerCenterX - camX;
     const centerY = playerCenterY - camY;
 
+    // Warm candle glow around the player, under the darkness
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const warm = ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, 200);
+    warm.addColorStop(0, "rgba(255, 180, 90, 0.10)");
+    warm.addColorStop(1, "rgba(255, 150, 50, 0)");
+    ctx.fillStyle = warm;
+    ctx.fillRect(centerX - 200, centerY - 200, 400, 400);
+    ctx.restore();
+
     const gradient = ctx.createRadialGradient(centerX, centerY, 70, centerX, centerY, 380);
 
     gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(0.7, "rgba(0, 0, 0, 0.30)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0.55)");
 
     ctx.fillStyle = gradient;

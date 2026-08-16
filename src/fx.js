@@ -112,24 +112,57 @@ export function getShake() {
 }
 
 export function drawParticles() {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
     for (const p of particles) {
-        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        const fade = Math.max(0, p.life / p.maxLife);
+
+        // Soft halo around each spark
+        ctx.globalAlpha = fade * 0.3;
         ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+
+        // Bright core
+        ctx.globalAlpha = fade;
         ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     }
+
+    ctx.restore();
     ctx.globalAlpha = 1;
 }
 
 export function drawNumbers() {
     for (const n of numbers) {
-        ctx.globalAlpha = Math.min(1, n.life / 0.45);
-        drawText(ctx, n.text, n.x, n.y, 8, n.color, "center");
+        const fade = Math.min(1, n.life / 0.45);
+        const pop = 1 + Math.max(0, 1 - n.life / 0.9) * 0.5;
+
+        ctx.save();
+        ctx.globalAlpha = fade;
+        ctx.translate(n.x, n.y);
+        ctx.scale(pop, pop);
+        drawText(ctx, n.text, 0, 0, 8, n.color, "center");
+        ctx.restore();
     }
     ctx.globalAlpha = 1;
 }
 
 export function drawVignette(lowHealth) {
     const alpha = Math.max(hitVignette * 0.6, lowHealth * 0.35);
+
+    // Faint ambient vignette for cinematic depth
+    const ambient = ctx.createRadialGradient(
+        VIEW_WIDTH / 2,
+        VIEW_HEIGHT / 2,
+        VIEW_HEIGHT * 0.42,
+        VIEW_WIDTH / 2,
+        VIEW_HEIGHT / 2,
+        VIEW_HEIGHT * 0.78
+    );
+    ambient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    ambient.addColorStop(1, "rgba(0, 0, 0, 0.22)");
+    ctx.fillStyle = ambient;
+    ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 
     if (alpha <= 0.02) {
         return;

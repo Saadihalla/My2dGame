@@ -75,6 +75,8 @@ export function setFont(ctx, size, bold) {
 export function drawText(ctx, text, x, y, size, color, align) {
     setFont(ctx, size, false);
     ctx.textAlign = align || "left";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillText(text, x + 1, y + 1);
     ctx.fillStyle = color || COLORS.text;
     ctx.fillText(text, x, y);
 }
@@ -108,7 +110,32 @@ export function wrapText(ctx, text, size, maxWidth) {
 const CORNER = 6;
 
 export function drawPanel(ctx, x, y, w, h, fill) {
+    // Soft drop shadow behind the frame (readability + depth)
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(x + CORNER, y);
+    ctx.lineTo(x + w - CORNER, y);
+    ctx.lineTo(x + w, y + CORNER);
+    ctx.lineTo(x + w, y + h - CORNER);
+    ctx.lineTo(x + w - CORNER, y + h);
+    ctx.lineTo(x + CORNER, y + h);
+    ctx.lineTo(x, y + h - CORNER);
+    ctx.lineTo(x, y + CORNER);
+    ctx.closePath();
+
     ctx.fillStyle = fill || COLORS.panel;
+    ctx.fill();
+    ctx.restore();
+
+    // Panel body (slightly lighter toward the top for a raised look)
+    const body = ctx.createLinearGradient(0, y, 0, y + h);
+    body.addColorStop(0, fill ? fill : "#232329");
+    body.addColorStop(1, fill ? fill : COLORS.panel);
+    ctx.fillStyle = body;
     ctx.fillRect(x + CORNER, y, w - CORNER * 2, h);
     ctx.fillRect(x, y + CORNER, w, h - CORNER * 2);
 
@@ -131,6 +158,10 @@ export function drawPanel(ctx, x, y, w, h, fill) {
     // Inner gold glints on the top edge
     ctx.fillStyle = "rgba(255, 215, 90, 0.25)";
     ctx.fillRect(x + CORNER + 2, y + 1, w - CORNER * 2 - 4, 1);
+
+    // Deep shadow along the bottom inner edge for bevel depth
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.fillRect(x + CORNER + 1, y + h - 2, w - CORNER * 2 - 2, 1);
 }
 
 // ======================
@@ -149,6 +180,10 @@ export function drawGradientBar(ctx, x, y, w, h, ratio, from, to, back) {
         gradient.addColorStop(1, to);
         ctx.fillStyle = gradient;
         ctx.fillRect(x, y, w * ratio, h);
+
+        // Inner top highlight makes the fill read as glossy
+        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.fillRect(x, y, w * ratio, Math.max(1, h * 0.28));
     }
 
     ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";

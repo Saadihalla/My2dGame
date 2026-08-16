@@ -1205,6 +1205,12 @@ export function drawPlayer(gameTime, alpha) {
     const x = player.x + (player.x - player.prevX) * alpha;
     const y = player.y + (player.y - player.prevY) * alpha;
 
+    // Ground shadow so the player reads as standing on the floor
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.fillRect(x + 5, y + 39, 30, 4);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.20)";
+    ctx.fillRect(x + 8, y + 41, 24, 2);
+
     if (player.dashTimer > 0) {
         drawPixelatedPlayer(x, y);
     } else {
@@ -1546,14 +1552,32 @@ export function drawEnemies(gameTime, alpha) {
         const x = e.x + (e.x - e.prevX) * alpha;
         const y = e.y + (e.y - e.prevY) * alpha;
 
+        // Ground shadow under the enemy
+        ctx.fillStyle = "rgba(0, 0, 0, 0.30)";
+        ctx.fillRect(x + 3, y + e.height - 1, e.width - 6, 4);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+        ctx.fillRect(x + 6, y + e.height + 2, e.width - 12, 2);
+
         // Health bar
 
         if (e.health < e.maxHealth || e.type === "boss") {
-            ctx.fillStyle = "darkred";
-            ctx.fillRect(x, y - 10, e.width, 5);
+            const bw = e.width;
+            const bh = 5;
+            const ratio = Math.max(0, e.barHealth / e.maxHealth);
+            const barColor = ratio > 0.5 ? "#7dff8a" : ratio > 0.25 ? "#ffd75a" : "#ff5a5a";
 
-            ctx.fillStyle = "lime";
-            ctx.fillRect(x, y - 10, e.width * Math.max(0, e.barHealth / e.maxHealth), 5);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+            ctx.fillRect(x - 1, y - 13, bw + 2, bh + 2);
+
+            ctx.fillStyle = barColor;
+            ctx.fillRect(x, y - 12, bw * ratio, bh);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+            ctx.fillRect(x, y - 12, bw * ratio, 1);
+
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x - 0.5, y - 12.5, bw + 1, bh + 1);
         }
 
         ctx.save();
@@ -1624,11 +1648,21 @@ export function drawLoot(gameTime) {
         }
 
         if (item.kind === "potion") {
+            const pulse = 0.5 + 0.5 * Math.sin(gameTime * 6 + item.x);
+
+            ctx.globalAlpha = 0.25 + pulse * 0.25;
+            ctx.fillStyle = "#ff6b6b";
+            ctx.fillRect(item.x - 10, item.y - 9 + bob, 20, 20);
+            ctx.globalAlpha = 1;
+
             ctx.fillStyle = "#c62828";
             ctx.fillRect(item.x - 5, item.y - 4 + bob, 10, 12);
 
             ctx.fillStyle = "#e57373";
             ctx.fillRect(item.x - 3, item.y - 2 + bob, 3, 7);
+
+            ctx.fillStyle = "#fff0c0";
+            ctx.fillRect(item.x - 2, item.y - 3 + bob, 1, 3);
 
             ctx.fillStyle = "#8d6e63";
             ctx.fillRect(item.x - 3, item.y - 7 + bob, 6, 3);

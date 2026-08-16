@@ -273,7 +273,13 @@ export function drawOverlays() {
     if (gameState === "title") {
         drawEmbers(0);
 
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.shadowColor = "rgba(255, 215, 90, 0.8)";
+        ctx.shadowBlur = 26;
         drawText(ctx, "DARK FANTASY", VIEW_WIDTH / 2, 118, 40, COLORS.text, "center");
+        ctx.restore();
+
         drawText(ctx, "Survive the waves. Slay the Pale King.", VIEW_WIDTH / 2, 150, 10, "#888", "center");
 
         if (highScore > 0) {
@@ -330,7 +336,12 @@ export function drawOverlays() {
     if (gameState === "gameover") {
         drawEmbers(3);
 
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.shadowColor = "rgba(255, 60, 60, 0.8)";
+        ctx.shadowBlur = 26;
         drawText(ctx, "GAME OVER", VIEW_WIDTH / 2, 84, 34, COLORS.red, "center");
+        ctx.restore();
 
         drawPanel(ctx, VIEW_WIDTH / 2 - 210, 100, 420, 150);
         drawStatsBreakdown(100);
@@ -351,7 +362,12 @@ export function drawOverlays() {
     if (gameState === "victory") {
         drawEmbers(4);
 
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.shadowColor = "rgba(255, 215, 90, 0.8)";
+        ctx.shadowBlur = 26;
         drawText(ctx, "VICTORY", VIEW_WIDTH / 2, 84, 34, COLORS.gold, "center");
+        ctx.restore();
         drawText(ctx, "The Pale King is dead. The darkness fades.", VIEW_WIDTH / 2, 118, 9, "#ddd", "center");
 
         drawPanel(ctx, VIEW_WIDTH / 2 - 210, 132, 420, 150);
