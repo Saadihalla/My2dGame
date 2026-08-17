@@ -20,6 +20,9 @@ export interface PlayerProfile {
 const ACCESS_KEY = "darkFantasyAccessToken";
 const REFRESH_KEY = "darkFantasyRefreshToken";
 
+// React bridge: window event fired on every session change.
+export const AUTH_EVENT = "df:auth";
+
 export let currentPlayer: PlayerProfile | null = null;
 
 try {
@@ -67,6 +70,8 @@ function saveSession(player: PlayerProfile, accessToken?: string | null, refresh
     } catch {
         // storage unavailable — session lives for this page load only
     }
+
+    window.dispatchEvent(new CustomEvent(AUTH_EVENT));
 }
 
 export function clearSession() {
@@ -79,6 +84,8 @@ export function clearSession() {
     } catch {
         // ignore
     }
+
+    window.dispatchEvent(new CustomEvent(AUTH_EVENT));
 }
 
 // Wraps fetch so network failures become a null result instead of an
@@ -93,7 +100,7 @@ async function safeFetch(url: string, options: RequestInit): Promise<Response | 
 
 // Fetches with the access token attached; on 401 it tries a refresh
 // once and retries the request. Returns null when the API is unreachable.
-async function apiFetch(path: string, options: RequestInit = {}): Promise<Response | null> {
+export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response | null> {
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(options.headers as Record<string, string> | undefined)

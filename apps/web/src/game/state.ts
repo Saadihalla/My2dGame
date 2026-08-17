@@ -7,6 +7,9 @@ import { createCamera, type CameraState } from "@dark-fantasy/sim";
 // "title" | "playing" | "paused" | "gameover" | "victory" | "levelup" | "settings"
 export type GameState = "title" | "playing" | "paused" | "gameover" | "victory" | "levelup" | "settings";
 
+// React bridge: window event fired on every game-state change.
+export const STATE_EVENT = "df:state";
+
 export let gameState: GameState = "title";
 export const camera: CameraState = createCamera();
 
@@ -59,6 +62,7 @@ export function addScore(amount: number) {
 
 export function setGameState(next: GameState) {
     gameState = next;
+    window.dispatchEvent(new CustomEvent(STATE_EVENT));
 }
 
 export function addGameTime(dt: number) {

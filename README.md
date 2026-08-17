@@ -60,7 +60,7 @@ In `apps/web`, set `VITE_API_URL` to the deployed API URL (empty = same origin).
 ## Roadmap status
 
 - ✅ Phase 0 — monorepo, TS port, sim extraction, React shell, FastAPI + JWT auth
-- ⏳ Phase 1 — profiles, match history, persistent stats
+- ✅ Phase 1 — profile page, match history, server-side XP/coins/level progression
 - ⏳ Phase 2 — Colyseus rooms, co-op multiplayer, client prediction
 - ⏳ Phase 3+ — bots, matchmaking, PvP, ranks, friends, meta progression
 

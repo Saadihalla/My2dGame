@@ -35,3 +35,20 @@ class RefreshToken(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class MatchHistory(Base):
+    __tablename__ = "match_history"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    player_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    mode: Mapped[str] = mapped_column(String(20), default="solo", server_default="solo")
+    score: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    wave: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    kills: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    survived: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    damage_dealt: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    result: Mapped[str] = mapped_column(String(10), default="victory", server_default="victory")
+    coins_earned: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    xp_earned: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

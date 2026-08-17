@@ -371,3 +371,229 @@ canvas {
     background: #333;
     color: white;
 }
+
+/* ======================
+   PROFILE PANEL (React overlay)
+   ====================== */
+
+.profile-button {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 30;
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    color: #ffd75a;
+    background: rgba(28, 28, 34, 0.92);
+    border: 1px solid #ffd75a;
+    padding: 10px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.profile-button:hover {
+    background: rgba(64, 58, 30, 0.95);
+}
+
+.profile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.78);
+}
+
+.profile-panel {
+    width: min(640px, 92vw);
+    max-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    background: #1c1c22;
+    border: 1px solid #ffd75a;
+    padding: 22px 26px;
+    font-family: "Press Start 2P", monospace;
+    color: #e6e6e6;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 215, 90, 0.35);
+    padding-bottom: 10px;
+}
+
+.profile-header h2 {
+    font-size: 16px;
+    color: #ffd75a;
+    margin: 0;
+}
+
+.profile-close {
+    background: none;
+    border: none;
+    color: #9aa;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.profile-close:hover {
+    color: #ff5a5a;
+}
+
+.profile-username {
+    margin: 14px 0 2px;
+    font-size: 13px;
+    color: #7ec8ff;
+}
+
+.profile-id {
+    margin: 0 0 14px;
+    font-size: 7px;
+    color: #888;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.profile-stat {
+    background: #26262f;
+    border: 1px solid #3a3a44;
+    padding: 10px 8px;
+    text-align: center;
+}
+
+.profile-stat-label {
+    display: block;
+    font-size: 7px;
+    color: #9aa;
+    margin-bottom: 6px;
+}
+
+.profile-stat-value {
+    font-size: 12px;
+    color: #ffd75a;
+}
+
+.profile-xp-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.profile-xp-bar {
+    flex: 1;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #3a3a44;
+}
+
+.profile-xp-fill {
+    height: 100%;
+    background: linear-gradient(#7ec8ff, #2a5a8a);
+}
+
+.profile-xp-text {
+    font-size: 7px;
+    color: #9aa;
+    white-space: nowrap;
+}
+
+.profile-history h3 {
+    font-size: 9px;
+    color: #9aa;
+    margin: 4px 0 10px;
+}
+
+.profile-match-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: 30vh;
+}
+
+.profile-match {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-bottom: 1px solid #2a2a33;
+    font-size: 8px;
+}
+
+.profile-match-result {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    border: 1px solid;
+}
+
+.profile-match.victory .profile-match-result {
+    color: #7dff8a;
+    border-color: #7dff8a;
+}
+
+.profile-match.defeat .profile-match-result {
+    color: #ff5a5a;
+    border-color: #ff5a5a;
+}
+
+.profile-match-score {
+    color: #ffd75a;
+    font-size: 9px;
+    min-width: 48px;
+}
+
+.profile-match-detail {
+    color: #bbb;
+    min-width: 60px;
+}
+
+.profile-match-reward {
+    color: #7ec8ff;
+    min-width: 56px;
+}
+
+.profile-coin {
+    color: #ffd75a;
+}
+
+.profile-match-time {
+    margin-left: auto;
+    color: #666;
+}
+
+.profile-empty {
+    font-size: 8px;
+    color: #777;
+    padding: 10px 0;
+}
+
+.profile-logout {
+    margin-top: 14px;
+    align-self: center;
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    color: #ff5a5a;
+    background: #1c1c22;
+    border: 1px solid #ff5a5a;
+    padding: 10px 22px;
+    cursor: pointer;
+}
+
+.profile-logout:hover {
+    background: rgba(120, 20, 20, 0.4);
+}

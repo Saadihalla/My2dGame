@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -27,6 +29,36 @@ class PlayerStatsResponse(BaseModel):
     xp: int
     coins: int
     high_score: int
+
+
+class MatchSubmit(BaseModel):
+    mode: str = Field(default="solo", max_length=20)
+    score: int = Field(ge=0)
+    wave: int = Field(default=1, ge=1)
+    kills: int = Field(default=0, ge=0)
+    survived: int = Field(default=0, ge=0)
+    damage_dealt: int = Field(default=0, ge=0)
+    result: str = Field(default="defeat", pattern="^(victory|defeat)$")
+
+
+class MatchResponse(BaseModel):
+    id: int
+    mode: str
+    score: int
+    wave: int
+    kills: int
+    survived: int
+    damage_dealt: int
+    result: str
+    coins_earned: int
+    xp_earned: int
+    created_at: datetime
+
+
+class MatchSubmitResponse(BaseModel):
+    match: MatchResponse
+    rewards: dict[str, int]
+    stats: PlayerStatsResponse
 
 
 class PlayerResponse(BaseModel):
