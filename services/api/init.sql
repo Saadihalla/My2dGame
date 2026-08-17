@@ -27,3 +27,20 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_player ON refresh_tokens(player_id);
+
+CREATE TABLE IF NOT EXISTS match_history (
+    id            BIGSERIAL PRIMARY KEY,
+    player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    mode          VARCHAR(20) NOT NULL DEFAULT 'solo',
+    score         INTEGER NOT NULL DEFAULT 0,
+    wave          INTEGER NOT NULL DEFAULT 1,
+    kills         INTEGER NOT NULL DEFAULT 0,
+    survived      INTEGER NOT NULL DEFAULT 0,
+    damage_dealt  INTEGER NOT NULL DEFAULT 0,
+    result        VARCHAR(10) NOT NULL DEFAULT 'victory',
+    coins_earned  INTEGER NOT NULL DEFAULT 0,
+    xp_earned     INTEGER NOT NULL DEFAULT 0,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_match_history_player ON match_history(player_id, created_at DESC);

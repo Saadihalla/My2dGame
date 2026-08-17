@@ -40,7 +40,8 @@ import { buildLevel, LEVELS, currentLevel, levelIndex } from "./levels";
 import { player, enemies, loot, projectiles, resetPlayer } from "./entities";
 import { setButtons, makeButton, makeCard, type UIButton } from "./ui";
 import { rollUpgradeOptions, type Upgrade } from "@dark-fantasy/sim";
-import { openAuthModal } from "./auth";
+import { currentPlayer, getAccessToken, openAuthModal } from "./auth";
+import { submitMatch } from "../api/matches";
 
 export function resetRun() {
     buildLevel(0);
@@ -136,10 +137,31 @@ export function togglePause() {
     }
 }
 
+// Sends the finished run to the API (fire-and-forget; only when a real
+// token-backed session exists — local fallback users stay offline).
+function syncMatchResult(result: "victory" | "defeat") {
+    if (!currentPlayer || !getAccessToken()) {
+        return;
+    }
+
+    submitMatch({
+        mode: "solo",
+        score: stats.score,
+        wave: Math.max(1, wave),
+        kills: stats.kills,
+        survived: Math.round(stats.survived),
+        damage_dealt: stats.damageDealt,
+        result: result
+    }).catch(function () {
+        // offline or API down — the run is simply not recorded
+    });
+}
+
 export function onPlayerDeath() {
     setGameState("gameover");
     saveHighScore();
     AudioFX.kill();
+    syncMatchResult("defeat");
     setButtons([
         makeButton("PLAY AGAIN", restartGame, 300),
         makeButton("TITLE", goTitle, 360)
@@ -150,6 +172,7 @@ export function victory() {
     setGameState("victory");
     saveHighScore();
     AudioFX.fanfare();
+    syncMatchResult("victory");
     setButtons([
         makeButton("PLAY AGAIN", restartGame, 330),
         makeButton("TITLE", goTitle, 390)
