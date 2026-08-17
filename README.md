@@ -1,78 +1,69 @@
 # ⚔ Dark Fantasy
 
-A dark fantasy arena survival game built with vanilla JS + Canvas. No game libraries — just ES modules, a fixed-timestep loop, and hand-rolled rendering.
+A dark fantasy arena survival game — evolved from a vanilla JS canvas project into a
+**React + TypeScript + FastAPI** monorepo, built toward real-time multiplayer.
+
+## Monorepo layout
+
+| Path | What it is |
+|------|------------|
+| `apps/web` | React 19 + Vite + TypeScript. The game engine (ported from vanilla JS) runs on a canvas inside a React shell; menus, lobby, friends and profile UI grow here |
+| `packages/sim` | **The shared simulation** — pure, framework-free game logic (collision, AI, waves, spawns, loot, upgrades, levels, tween). Runs in the browser *and* on the future game server, so client prediction and server authority use identical code. Fully unit-tested |
+| `services/api` | FastAPI + SQLAlchemy + Neon (Postgres) + JWT auth (access + rotating refresh tokens). Accounts, stats, friends and ranks live here |
 
 ## Setup
 
 ```bash
-npm install
-npm run dev        # start the dev server (http://localhost:5173)
-npm run build      # production build → dist/
-npm run preview    # serve the production build
-npm test           # run the unit tests (vitest)
-npm run lint       # run eslint
+pnpm install
+pnpm --filter @dark-fantasy/sim test        # 91 unit tests on the pure game logic
+pnpm --filter @dark-fantasy/web dev         # play the game at http://localhost:5173
+pnpm -r typecheck                            # strict TS across the workspace
+pnpm -r build
 ```
 
 ## How to play
 
 - **W A S D / arrows** — move
 - **SPACE / ⚔ button** — attack (hold to keep swinging)
-- **SHIFT / double-tap a direction / » button / gamepad X** — dash (brief burst of speed with i-frames; the player pixelates into a trail of pixels mid-air)
+- **SHIFT / double-tap a direction / » button / gamepad X** — dash (i-frames, pixel trail)
 - **P / Esc / ❚❚ button / gamepad Start** — pause
 - **R / ↻** — restart
-- **Enter / START** — begin
-- **Gamepad** — left stick to move, A to attack, X to dash, Start to start/pause
-- **Joystick + »** — mobile movement and dash (appear on small screens)
+- Survive 10 waves across 3 levels (Forest Ruins → Crypt → Highlands), clear wave 10 to win
+- Enemies: grunts, stalkers, bulwarks, imps, hexers, bombers, wardens, and the **Pale King** boss every 5th wave
+- XP → pick-3 upgrade choices; potions and sword upgrades drop from kills
+- **Account** (title screen → ACCOUNT): register/login via the FastAPI API with real JWT tokens. Falls back to localStorage when the API is unreachable (local dev)
 
-## Game loop
+## API (services/api)
 
-- Survive **waves** of enemies: grunts, fast stalkers, armored bulwarks, swarm imps, ranged hexers (telegraphed projectiles), self-detonating bombers, shield wardens (block attacks from the front — dash behind them), and a **Pale King boss** every 5th wave
-- Clear a wave → an **exit portal** opens → step in to reach the next level (Forest Ruins → Crypt → Highlands, each with its own palette and layout)
-- **Clear wave 10** to win
-- Enemies scale in HP each wave
+Deploys to Railway (Docker). Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` in Railway.
 
-## Progression
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/auth/register` | Create account → tokens |
+| `POST /api/auth/login` | Login → tokens |
+| `POST /api/auth/refresh` | Rotate refresh token |
+| `GET /api/me` | Current profile + stats |
+| `POST /api/me/stats` | Update stats (level/xp/coins/high_score) |
+| `GET /api/health` | Liveness probe |
 
-- **XP & levels** — each kill grants XP; leveling up pauses the action and offers a **pick-3 choice** of stackable upgrades: damage, crit (2x), lifesteal, cleave, attack speed, range, move speed, max HP, dash recharge
-- **Health potions** drop from kills (red flask)
-- **Sword upgrades** drop occasionally (gold sword): +4 damage, +5 range
-- **Dash** — a quick burst in any direction (or your facing when idle) on a short cooldown; grants invulnerability frames and shoves enemies aside
-- **Score** — kills, wave-clear bonuses, level bonuses; best score is saved in `localStorage`
+First deploy: run `services/api/init.sql` against your Neon database (matches the
+schema the old Vercel functions created, so existing accounts keep working).
 
-## Juice
+In `apps/web`, set `VITE_API_URL` to the deployed API URL (empty = same origin).
 
-- **Hit-stop** — the action freezes for a beat on kills and heavy boss hits
-- **Death animations** — enemies fade out and sink instead of vanishing
-- **Pixel air dash** — the player sprite is downsampled into chunky pixels mid-dash, leaving a trail of pixel debris
-- Particles, damage numbers, screen shake, hurt vignette, torch light
+## Deployment
 
-## Architecture
+- **Vercel** — `apps/web` (see `vercel.json`, installs with pnpm, builds the web app)
+- **Railway** — `services/api` via `Dockerfile` + `railway.json`; **Neon** — Postgres
+- The real-time game server (Colyseus) is the next phase; it will be another Railway service consuming `packages/sim`
 
-| File | Purpose |
-|------|---------|
-| `src/game.js` | Entry point: game loop (fixed 60Hz timestep + render interpolation), wave manager, portal, bootstrap |
-| `src/config.js` | Canvas setup, DPR scaling, constants, fixed timestep settings |
-| `src/state.js` | Mutable runtime state (game state, wave, stats, high score) shared across modules |
-| `src/events.js` | Flow event indirection — breaks import cycles between input/entities and game flow |
-| `src/flow.js` | Game-flow actions: start, restart, pause, death, victory, level advance |
-| `src/audio.js` | WebAudio synth SFX (no assets) |
-| `src/fx.js` | Particles, damage numbers, screen shake, hurt vignette |
-| `src/banners.js` | Wave announcements and level-up banners |
-| `src/levels.js` | Level data (tile maps, decor, palettes), collision facade, map rendering |
-| `src/entities.js` | Player, enemy types/AI, combat, loot, XP, entity rendering |
-| `src/input.js` | Keyboard + mobile joystick/attack controls |
-| `src/ui.js` | HUD, title/pause/end screens, buttons, click handling |
-| `src/logic/*.js` | Pure, framework-free game rules (collision, waves, enemy AI, spawn points, loot rolls) — fully unit-tested |
-| `tests/*.test.js` | Vitest unit tests for the pure logic modules |
+## Roadmap status
 
-Key design decisions:
-
-- **ES modules** — no build-step runtime magic; `vite` is only a dev server/bundler. Modules keep the import graph acyclic (state + events modules break the cycles).
-- **Fixed timestep** — logic runs at exactly 60Hz regardless of display refresh rate; rendering interpolates between the last two ticks for smooth motion on 120Hz+ screens. Enemy knockback, particle gravity, and AI timers are now frame-rate independent.
-- **No softlocks** — the player can shove enemies aside; an enemy only body-blocks when backed by terrain.
-- **Spawn safety** — wave spawns fall back through relaxed constraints to a tile scan, so large waves can never produce undefined spawn points.
-- **Pure rules** — wave composition, collision, enemy state machine, spawn picking, and loot rolls are pure functions with no DOM/canvas imports, so balance changes are unit-testable.
+- ✅ Phase 0 — monorepo, TS port, sim extraction, React shell, FastAPI + JWT auth
+- ⏳ Phase 1 — profiles, match history, persistent stats
+- ⏳ Phase 2 — Colyseus rooms, co-op multiplayer, client prediction
+- ⏳ Phase 3+ — bots, matchmaking, PvP, ranks, friends, meta progression
 
 ## Legacy
 
-Pre-0.2.0, the game loaded via plain `<script>` tags and ran from `file://`. That still works from the git history (`git checkout 1a55731^`), but the module layout is the way forward.
+The pre-0.3.0 vanilla JS single-page version is in git history (`git checkout 1c954cc^`).
