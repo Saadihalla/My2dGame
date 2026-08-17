@@ -184,6 +184,94 @@ export const player: PlayerState = {
     pendingLevels: 0
 };
 
+// ======================
+// ELF COMPANION (Puck — tiny, harmless, flies along with Guts)
+// ======================
+
+export interface ElfState {
+    x: number;
+    y: number;
+    prevX: number;
+    prevY: number;
+    bobPhase: number;
+    wingPhase: number;
+}
+
+export const elf: ElfState = {
+    x: 110,
+    y: 80,
+    prevX: 110,
+    prevY: 80,
+    bobPhase: 0,
+    wingPhase: 0
+};
+
+export function updateElf(dt: number) {
+    elf.prevX = elf.x;
+    elf.prevY = elf.y;
+
+    elf.bobPhase += dt * 3.5;
+    elf.wingPhase += dt * 16;
+
+    // Puck hovers near Guts — offset to the shoulder opposite the
+    // sword arm so he never clips the Dragonslayer.
+    const tx = player.x + player.width / 2 + (player.direction === "right" ? -22 : player.direction === "left" ? 22 : 0);
+    const ty = player.y + (player.direction === "up" ? 12 : -18) + Math.sin(elf.bobPhase) * 3;
+
+    const k = Math.min(1, dt * 7);
+    elf.x += (tx - elf.x) * k;
+    elf.y += (ty - elf.y) * k;
+}
+
+export function drawElf(gameTime: number, alpha: number) {
+    const x = elf.x + (elf.x - elf.prevX) * alpha;
+    const y = elf.y + (elf.y - elf.prevY) * alpha;
+    const flap = Math.sin(elf.wingPhase) * 0.6;
+
+    // Faint glow so the tiny guy reads against dark floors
+    const glow = ctx.createRadialGradient(x, y, 1, x, y, 14);
+    glow.addColorStop(0, "rgba(160, 210, 255, 0.25)");
+    glow.addColorStop(1, "rgba(160, 210, 255, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 14, y - 14, 28, 28);
+
+    // Fairy wings (flap back and forth)
+    ctx.fillStyle = "rgba(210, 235, 255, 0.7)";
+    ctx.save();
+    ctx.translate(x, y - 1);
+    ctx.rotate(flap);
+    ctx.beginPath();
+    ctx.ellipse(-4, 0, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(x, y - 1);
+    ctx.rotate(-flap);
+    ctx.beginPath();
+    ctx.ellipse(4, 0, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Body (tiny)
+    ctx.fillStyle = "#8ab4d8";
+    ctx.fillRect(x - 2, y + 1, 4, 5);
+
+    // Head
+    ctx.fillStyle = "#ffe0bd";
+    ctx.fillRect(x - 3, y - 4, 6, 6);
+
+    // Spiky pale-blue hair
+    ctx.fillStyle = "#b8d8f0";
+    ctx.fillRect(x - 3, y - 6, 6, 2);
+    ctx.fillRect(x - 5, y - 5, 2, 2);
+    ctx.fillRect(x + 3, y - 5, 2, 2);
+
+    // Eyes
+    ctx.fillStyle = "#1a1a2a";
+    ctx.fillRect(x - 2, y - 1, 1, 1);
+    ctx.fillRect(x + 1, y - 1, 1, 1);
+}
+
 export const ENEMY_TYPES: Record<string, EnemyTypeDef> = {
     grunt: {
         name: "Grunt",
@@ -350,6 +438,11 @@ export function resetPlayer() {
     player.invuln = 0;
     player.dashTimer = 0;
     player.dashCooldown = 0;
+
+    elf.x = player.x + 14;
+    elf.y = player.y - 18;
+    elf.prevX = elf.x;
+    elf.prevY = elf.y;
 }
 
 function tryStartDash() {

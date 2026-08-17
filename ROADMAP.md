@@ -226,6 +226,13 @@ skin, see it in the lobby and in-game.
 
 ---
 
+## 🧊 Evergreen / cosmetic extras
+
+- [x] Puck-style elf companion that hovers beside Guts (tiny, flies along,
+      ignores enemies/terrain — cosmetic only)
+
+---
+
 ## Testing & verification habits
 
 - [x] Sim logic: vitest suites (pure functions stay pure — this is what makes the
