@@ -1,9 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title></title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>!!!YOU ARE AN IDIOT!!!</title>
+<style>
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
+    cursor: crosshair;
+    overflow-x: hidden;
+  }
+  .msg {
+    font-size: 40px;
+    font-weight: bold;
+    display: inline-block;
+    margin: 10px;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    animation: shake 0.1s infinite;
+  }
+  .small {
+    font-size: 25px;
+  }
+  .big {
+    font-size: 70px;
+  }
+  @keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0.5deg); }
+    25% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+    50% { transform: translate(-2px, 1px) rotate(0.5deg); }
+    75% { transform: translate(1px, 2px) rotate(-0.5deg); }
+    100% { transform: translate(1px, -1px) rotate(0.5deg); }
+  }
+  .marquee {
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 30px;
+    font-weight: bold;
+    border-top: 5px dashed;
+    border-bottom: 5px dashed;
+    margin: 15px 0;
+  }
+  .marquee span {
+    display: inline-block;
+    animation: scroll 6s linear infinite;
+  }
+  @keyframes scroll {
+    0% { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+</style>
 </head>
 <body>
+<script>
+const insults = ["YOU ARE AN IDIOT", "YOU ARE AN IDIOT!!!", "IDIOT", "YOU ARE AN IDIOT!"];
+const masos = [
+  "YOU ARE A MASOCHIST", "MASOCHIST", "YOU ARE A MASOCHIST!", 
+  "YOU ARE A MASOCHIST!!", "PAIN LOVER", "YOU ARE A MASOCHIST!!!",
+  "GLUTTON FOR PUNISHMENT", "MASOCHIST!!!"
+];
+const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FF4500", "#7FFF00", "#FF1493", "#00CED1", "#FFD700", "#8A2BE2"];
+const smilies = ["&#128512;", "&#128513;", "&#128514;", "&#128515;", "&#128516;", "&#128517;", "&#128518;", "&#128519;", "&#128520;", "&#128521;", "&#128522;", "&#128523;", "&#128524;", "&#128525;", "&#128526;", "&#128539;", "&#128540;", "&#128541;", "&#128542;", "&#128545;"];
+
+document.body.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+function makeText(msg, cls) {
+  const el = document.createElement("span");
+  el.className = "msg " + (cls || "");
+  el.textContent = msg;
+  el.style.color = colors[Math.floor(Math.random() * colors.length)];
+  el.style.fontSize = (30 + Math.random() * 80) + "px";
+  document.body.appendChild(el);
+}
+
+// several idiots + many masochists interleaved
+for (let i = 0; i < 200; i++) {
+  if (i % 7 === 0) makeText(insults[Math.floor(Math.random() * insults.length)], i % 5 === 0 ? "big" : "");
+  else makeText(masos[Math.floor(Math.random() * masos.length)], i % 5 === 0 ? "small" : "");
+  if (i % 3 === 0) {
+    const s = document.createElement("span");
+    s.className = "msg";
+    s.innerHTML = smilies[Math.floor(Math.random() * smilies.length)];
+    s.style.fontSize = (40 + Math.random() * 70) + "px";
+    document.body.appendChild(s);
+  }
+}
+
+// marquee strips
+for (let k = 0; k < 8; k++) {
+  const m = document.createElement("div");
+  m.className = "marquee";
+  const span = document.createElement("span");
+  let txt = "";
+  for (let j = 0; j < 30; j++) {
+    txt += (Math.random() < 0.5 ? "YOU ARE AN IDIOT " : "YOU ARE A MASOCHIST ") + smilies[Math.floor(Math.random()*smilies.length)] + " ";
+  }
+  span.innerHTML = txt;
+  m.appendChild(span);
+  m.style.color = colors[Math.floor(Math.random() * colors.length)];
+  m.style.borderColor = colors[Math.floor(Math.random() * colors.length)];
+  document.body.appendChild(m);
+}
+
+// endless flashing color changer
+setInterval(function () {
+  const bg = colors[Math.floor(Math.random() * colors.length)];
+  document.body.style.backgroundColor = bg;
+  document.body.style.color = colors[Math.floor(Math.random() * colors.length)];
+  const msgs = document.querySelectorAll(".msg, .marquee");
+  msgs.forEach(function (el) {
+    el.style.color = colors[Math.floor(Math.random() * colors.length)];
+  });
+}, 150);
+
+// fake alert that never lets you click away
+setTimeout(function () {
+  alert("YOU ARE AN IDIOT AND A MASOCHIST!!! 😜");
+}, 2000);
+setTimeout(function () {
+  while (true) {
+    if (!confirm("ARE YOU READY TO ACCEPT YOU ARE AN IDIOT??")) { break; }
+  }
+  alert("GOOD. NOW REMEMBER: YOU ARE A MASOCHIST!!!");
+}, 4000);
+</script>
+<noscript>YOU ARE AN IDIOT AND A MASOCHIST. (Enable JavaScript for the full experience.)</noscript>
 </body>
 </html>
