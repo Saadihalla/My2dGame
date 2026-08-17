@@ -100,9 +100,7 @@ export function resetRun() {
 }
 
 export function startGame() {
-    resetRun();
-    setGameState("playing");
-    setButtons([]);
+    window.location.href = "/placeholder.html";
 }
 
 export function restartGame() {

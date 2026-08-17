@@ -230,6 +230,8 @@ skin, see it in the lobby and in-game.
 
 - [x] Puck-style elf companion that hovers beside Guts (tiny, flies along,
       ignores enemies/terrain — cosmetic only)
+- [x] START now redirects to an empty `placeholder.html` page instead of
+      launching the game (temporary gate while the game is taken down)
 
 ---
 
