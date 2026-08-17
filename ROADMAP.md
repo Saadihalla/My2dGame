@@ -1,273 +1,576 @@
-# ⚔ Dark Fantasy — Development Plan & Progress
+# Dark Fantasy → Eclipse Arena: Multiplayer Roadmap
 
-Living roadmap for taking the game to the next level. Each phase is executed
-incrementally; everything is verified with `npm run lint`, `npm test`, and a
-live browser smoke test before landing.
-
-## Repository state
-
-- **Stack**: vanilla JS + Canvas 2D, ES modules, Vite (dev/build), Vitest (unit tests), ESLint
-- **Commits**:
-  - `49ef0c1` — Phase 0: foundation (modules, fixed timestep, pure logic, tests)
-  - `8ddd427` — Phase 1: dash, hit-stop, death animations, gamepad, mobile buttons
-- **Status**: pushed to `origin/master`
+A complete plan to turn the single-player "Dark Fantasy" into a multiplayer
+game with rooms, friends, bots, ranks, persistent upgrades, multiple
+characters, and maps.
 
 ---
 
-## Phase 0 — Foundation ✅ DONE
+## 1. What you already have (repo study)
 
-Converted the architecture so everything after is easier, safer, and testable.
+### Strengths — keep these, they are your head start
 
-### Done
-- **ES modules** (`src/`): acyclic import graph via a dedicated `state.js`
-  (all mutable runtime state) and `events.js` (flow-event indirection that
-  breaks input/entities → game-flow cycles)
-- **Fixed timestep**: logic ticks at exactly 60Hz with an accumulator; player
-  and enemy rendering interpolate between ticks, so knockback, particle
-  gravity, and AI timers are refresh-rate independent
-- **Pure logic extraction** (`src/logic/`, DOM-free, fully unit-tested):
-  - `collision.js` — AABB + tile/object collision
-  - `waves.js` — wave composition
-  - `ai.js` — enemy state machine (chase/windup/strike/recover/retreat)
-  - `spawn.js` — spawn point selection with graceful fallbacks
-  - `loot.js` — drop rolls
-- **Tests**: 43 Vitest unit tests (`tests/`)
-- **Tooling**: Vite dev/build/preview, ESLint (flat config), `npm test`
-- **Bug fixes**:
-  - Spawn crash: wave spawns now degrade from strict constraints → relaxed
-    pass → tile scan, and can never produce undefined points
-  - Corner softlock: the player can shove enemies out of the way; enemies only
-    body-block when backed by terrain
+| Asset | Why it matters |
+|---|---|
+| **Pure logic layer** (`src/logic/*`) | Collision, waves, AI, spawns, loot, upgrades are pure functions with no DOM/canvas imports. They can run **unchanged on a game server** — this is the #1 advantage for multiplayer. |
+| **Fixed 60Hz timestep + render interpolation** | The simulation is already deterministic and frame-rate independent. Exactly what a server tick needs. |
+| **Unit tests** (`tests/*.test.js`, vitest) | You can move the logic to a shared package and keep all tests green. Rare for a beginner project — genuinely impressive. |
+| **Procedural sprite pipeline** (`tools/generate-sprites.js`, `spritesheet.json`, `preview-sprites.js`) | You generate pixel art in code. New characters/skins = new data + a script run, not hand-drawn assets. |
+| **Auth + Neon Postgres + bcrypt** | Accounts already exist (`api/register.js`, `api/login.js`, `players` / `player_stats` tables). |
+| **Juice systems** | Hit-stop, particles, shake, vignette, pixel-dash — these stay 100% client-side and keep feeling great in multiplayer. |
+| **WebAudio synth SFX** | No audio assets to manage; works everywhere. |
+| **Gamepad + mobile + keyboard** | Input already abstracts into a single `keys` object + edge-triggered flags. Easy to convert into "input intents" to send over the network. |
 
-### Notes
-- Removing the `file://` fallback was intentional — modules require a server.
-- The `state.js` setters keep every state mutation centralized and lint-clean
-  (`no-import-assign` compliant).
+### What blocks multiplayer (honest list)
 
----
-
-## Phase 1 — Game feel & control depth ✅ DONE
-
-### Done
-- **Dash** (replaces the planned dodge roll, per player request):
-  - Quick committed burst in any direction (8-way normalized from held keys,
-    falls back to facing when idle), 660px/s for 0.2s, 0.9s cooldown
-  - Triggers: **Shift**, double-tap a movement key (220ms window), mobile `»`
-    button, gamepad X
-  - Full invulnerability frames (0.32s) that suppress the hurt-blink flicker
-  - **Pixel-air animation**: the sprite is downsampled to a 16×16 grid and
-    scaled back up with smoothing off — the player reads as chunky scattered
-    pixels mid-dash — with a trail of pixel-debris particles
-  - Shoves enemies aside; HUD shows a dash-cooldown bar
-  - Pure direction logic in `src/logic/dash.js` (3 unit tests)
-- **Hit-stop**: ~90ms full freeze on kills, ~50ms on boss hits
-- **Death animations**: enemies fade out and sink over 0.5s instead of
-  vanishing; fully faded corpses are removed (also fixes a leak where dead
-  enemies accumulated across waves)
-- **Gamepad support**: left stick to move, A to attack, X to dash, Start to
-  start/pause — polled per frame, edge-triggered, safe disconnect
-- **Mobile**: dedicated dash (`»`) and pause (`❚❚`) buttons — mobile finally
-  has pause
-
-### Deferred from the original Phase 1 list (still open)
-- Music layer (procedural WebAudio loop, per-level drones, mute toggle)
-- Aimable / ranged attack (mouse or touch aiming, thrown-knife skill)
+1. **Global singletons everywhere.** `player` is one object in `entities.js`;
+   `enemies`, `loot`, `projectiles` are module-level arrays; `gameState`,
+   `wave`, `stats` are mutable exports of `state.js`. Multiplayer needs
+   *collections of players* and a *per-room world state*.
+2. **Simulation and presentation are fused.** `entities.js` both updates and
+   draws; `updatePlayer()` reads `keys` directly from the DOM. A server can't
+   run that.
+3. **No network layer at all.** No rooms, no sync, no server concept.
+4. **Security flaw:** the auth fallback stores **plaintext passwords in
+   localStorage** (`src/auth.js`). This must die in Phase 0.
+5. **Camera/HUD/overlays assume exactly one local player** (they're actually
+   easy to generalize — the hard part is 1 & 2).
 
 ---
 
-## Phase 1.5 — UI, Assets, Animations, Particles & Dynamic Scale
+## 2. The vision
 
-Goal: stop being a small static 800×500 window. Bigger camera-driven maps, a
-responsive viewport, real sprite assets, frame animations, a proper particle
-system, and a full UI overhaul. Order matters — each phase builds on the last.
+One game, three modes, all sharing one engine:
 
-**Status: Phases A ✅ B ✅ C ✅ E ✅ — Phase D (particles) deliberately deferred.**
+| Mode | Players | Bots | What it is |
+|---|---|---|---|
+| **Co-op Survival** | 2–4 | Optional | The game you have today, together. Shared waves, scaled enemy HP, per-player XP/upgrades, everyone dies or nobody wins. |
+| **Arena (PvP)** | 2–8 | Optional | Deathmatch on symmetric arenas. Ranked + casual. Character kits only — no account perks (fair play). |
+| **Solo** | 1 | Optional | Your current game, now part of the same system (progress, unlocks). |
 
-### Phase A — Dynamic viewport + camera (FOUNDATION, do first)
-
-Everything else hangs off this. Maps become bigger than one screen, the
-camera follows the player, and the canvas adapts to the window.
-
-**Specs / decisions**
-- Keep `TILE = 50`; levels become multi-screen: target 32×20 tiles
-  (1600×1000 world) with per-level dimensions in the level data
-  (`width`/`height` in tiles instead of fixed 16×10 strings)
-- Logical view stays ~800×500 for gameplay/HUD layout; camera shows a window
-  into the world
-- Desktop: canvas letterboxed with a themed backdrop; Mobile: full-screen,
-  safe-area aware
-- Camera: player-follow with smoothing (lerp), clamped to map bounds,
-  integrated with existing screen shake
-- HUD stays in *screen* space — never scrolls with the camera
-
-**Tasks**
-1. `logic/camera.js` — pure camera math: `cameraUpdate(cam, target, bounds,
-   dt)`, `worldToScreen`, clamp; unit tests
-2. Level data: per-level `width`/`height`, build maps from rows of that size
-3. Rewrite `drawMap` to render through a camera transform; pre-render the
-   static tile layer to an offscreen canvas once per level build
-4. Tile/entity culling: only draw what intersects the viewport
-5. Resize handling: `resize` listener → recompute canvas size + DPR +
-   buffers; HUD anchored to screen corners (already true — verify)
-6. Re-anchor world-space effects: darkness gradient, torch lights, portal,
-   dash pixelation (its 96px offscreen canvas must stay screen-anchored)
-7. Spawn bounds / portal placement use world size; update level tests
-
-**Verification**: resize browser window mid-game (no artifacts), camera
-smooths without jitter, all existing tests still pass, level-data tests
-extended for the new dimensions.
-
-### Phase B — Asset pipeline ✅ DONE
-
-Move from 100% procedural `fillRect` art to real sprite assets while keeping
-procedural sprites as placeholders/fallbacks.
-
-**Done**
-- `assets/`-served sheets (`public/assets/`) + `src/assets.js` loader with
-  progress, `image-rendering: pixelated`
-- Sprite sheet format: PNG sheet + JSON frame defs (name, x, y, w, h,
-  anchor, per-state frame lists) + `logic/frames.js` (pure, unit tested)
-- Player/enemy/torch/projectile/loot draws swapped to sheet draws with a
-  procedural fallback flag
-- **Full 9-character roster on the sheet** — the 5 missing enemy sets
-  (grunt, fast, swarm, tank, boss) regenerated via `tools/generate-sprites.js`
-  with idle/walk/attack/hurt/death animations (`tools/preview-sprites.js` for QA)
-- Pixel font: Press Start 2P everywhere (HUD, screens, banners, numbers)
-
-### Phase C — Animation system ✅ DONE
-
-Frame-based animation controllers replacing static sprites.
-
-**Done**
-- `logic/tween.js` — pure easing/tween helpers (lerp, ease curves,
-  easeOutBack/elastic/bounce) + `tests/tween.test.js`
-- Player: idle bob, walk, attack lunge, dash frames, hurt, death
-- Enemies (all 9 types): idle/walk cycles, attack frames during
-  windup/strike, hurt stagger on hit, death pose while sinking/fading
-- Banner slide/fade-in with easing (honors reduced-motion)
-
-### Phase D — Particle overhaul ⏳ DEFERRED (not started)
-
-Turn the single square-particle system into a real emitter system.
-
-**Still open**
-1. `logic/particles.js` — emitter configs: shape (rect/circle/line),
-   gravity, drag, spin, size + alpha curves, additive blending flag,
-   per-emitter palette; pure update math, unit tested
-2. Pooling: preallocated particle pool, no per-frame array splice churn
-3. `src/fx.js` rewrite: typed emitters (spark, smoke, shard, ember, blood)
-   replacing `spawnParticles`
-4. Effect inventory:
-   - hits (per-enemy palettes), crit explosion, kill burst
-   - dash trail, explosion shockwave ring + smoke + debris
-   - shield clink, level-up confetti, portal swirl
-   - ambient per level: forest leaves, crypt ash, highlands embers
-   - torch embers, death dissolve
-5. Damage numbers: crit pop scale, easing float
-
-**Verification**: 60fps with large crowds (pool stats exposed in debug),
-ambient effects present per level, additive effects don't blow out the canvas
-state.
-
-### Phase E — UI overhaul ✅ DONE
-
-Visual language + richer screens + mobile + settings.
-
-**Done**
-1. `src/theme.js` — dark-fantasy panels (9-slice style frames), gold
-   accents, pixel-font helpers, gradient bars, pixel icon glyphs
-2. HUD: gradient bars with icons (heart/upgrade/dash), picked-upgrade icon
-   row, boss health bar top-center, wave progress countdown
-3. Screens: animated title (drifting embers), level-up cards with icons +
-   key hints, game-over with run stats breakdown (kills by type, damage
-   dealt, hits taken), victory recap
-4. Mobile: dynamic joystick (spawns under the thumb), safe-area insets,
-   press-state glow on buttons
-5. Settings screen: sound volume, screen shake toggle, reduced-motion,
-   control hints; persisted in localStorage, applied to audio/FX
-6. Banners: slide/fade animations with the tween module
-
-### Risks & notes
-
-- **Phase A touches everything** (draw order, lighting gradients, HUD
-  anchoring, dash pixelation, spawn logic) — do it in one sitting with the
-  browser smoke test after every sub-step
-- World-space vs screen-space split: entities/particles/lighting render in
-  world space (camera transform); HUD/overlays/banners in screen space
-- The dash pixelation offscreen canvas must move with the camera
-- Keep `logic/*` modules DOM-free — camera, frames, tween, particles all
-  unit-testable
+Social layer: friends list, presence ("in a lobby with 3 others"), private
+room codes, invites, room chat, ranked tiers, leaderboards.
 
 ---
 
-## Phase 2 — Content & systems depth ⏳ NEXT
+## 3. Recommended tech stack
 
-The biggest replayability win; nothing here needs rework of the foundation.
+```
+┌───────────────────────────────  CLIENT  ───────────────────────────────┐
+│  Vite + vanilla Canvas 2D (your engine, kept as-is) + Colyseus SDK     │
+│  TypeScript (progressive migration)                                    │
+├──────────────────────────────  SHARED  ────────────────────────────────┤
+│  packages/shared — pure game logic (moved from src/logic), balance     │
+│  data, Colyseus schema classes, protocol messages — runs in both       │
+│  browser and Node                                                      │
+├──────────────────────────────  SERVER  ────────────────────────────────┤
+│  Node.js 20+ · Colyseus 0.17 (rooms, matchmaking, state sync)          │
+│  Express 5 REST (auth, friends, profiles, match history)               │
+│  JWT auth (httpOnly cookies) · zod validation                          │
+│  Neon Postgres (you already use it) · Redis/Upstash later (scale)      │
+│  Deployed on Railway or Fly.io (long-lived WebSockets)                 │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-1. **Level-up choices** (pick-3 on level up, Vampire-Survivors style) ✅ DONE
-   - 9 stackable upgrades: Brawler (+damage), Long Reach (+range), Swift
-     Blade (attack speed), Vitality (+max HP), Striders (+move speed),
-     Quick Reflexes (dash recharge), Keen Edge (crit), Bloodthirst
-     (lifesteal), Cleave (wider sweeps)
-   - Leveling pauses the action; pick via click or 1/2/3; multiple levels
-     from one kill queue up sequentially
-2. **New enemy archetypes** ✅ DONE
-   - **Imp** (swarm) — fast, fragile chaff from wave 2
-   - **Hexer** (ranged caster) — kites at range, telegraphs, then fires
-     a glowing projectile (dash through it with i-frames) — wave 3+
-   - **Bomber** (exploder) — rushes in, telegraphs, then detonates in an
-     AoE blast, taking itself out — wave 4+
-   - **Warden** (shieldbearer) — blocks attacks from the player-facing
-     side; turns slowly, so dash behind it and strike its back — wave 5+
-3. **Real boss phases** ⏳ NEXT
-   - Pale King gets 3 phases: summon adds → radial projectile burst → enrage charge
-4. **Elemental loot/weapons** — fire (DoT), frost (slow), chain lightning;
-   enemy resistances
-5. **Environment hazards** — spike traps, lava pools, pressure-plate doors
-6. **New levels** — 3–5 more (swamp, ice cavern, …)
-7. **Meta progression** — run currency + unlockable classes (duelist,
-   berserker, ranger), persisted to localStorage
+### Decisions and why
 
----
+| Choice | Why (and the alternatives you'd be turning down) |
+|---|---|
+| **Colyseus 0.17** (over raw `ws`, Socket.IO, or Photon) | Purpose-built for exactly this: authoritative server, rooms, built-in matchmaking, delta-compressed state sync, automatic reconnection, rate limiting, full-stack TypeScript types. Socket.IO is chat-shaped, not game-shaped; raw `ws` means writing a sync protocol from scratch. |
+| **Keep your custom engine** (over Phaser/Godot/Unity) | Your engine already does fixed timestep, interpolation, and tested logic — all the hard parts. Phaser would be a full rewrite for zero multiplayer benefit. Your engine + Colyseus is a proven, common combo. |
+| **Server-authoritative simulation** | The server runs the game (30Hz tick) reusing your pure logic; clients send inputs and render states. This is the only way ranks/leaderboards mean anything and it's *cheaper* to build than client-authoritative here because your logic is already headless-friendly. |
+| **TypeScript** | The single biggest safety upgrade: the shared protocol and room state get compile-time checked on both ends. Migrate gradually — new files in TS, old files when you touch them. |
+| **One Node server for WS + REST** (moving `api/` off Vercel) | Vercel serverless **cannot** hold long-lived WebSocket rooms. Consolidating REST + rooms in one Node app means one deployment, one DB connection pool, one auth scheme. Frontend stays on Vercel (it's already configured). |
+| **Railway / Fly.io** | Simple deploys with real WebSockets. Railway is the easiest for a solo dev; Fly.io if you want regional latency control later. |
+| **Neon Postgres** | Already working. Friends, profiles, matches, unlocks, rankings are all relational — perfect fit. |
+| **JWT + httpOnly cookie** | Standard, works across the REST API and Colyseus `onAuth`. |
+| **Vitest stays** | Add server integration tests next to your existing logic tests. |
 
-## Phase 3 — Meta & audience polish
+### Proposed repo layout (npm workspaces monorepo)
 
-Make it feel like a product, not a prototype.
-
-1. **PWA** — service worker + manifest: installable, offline, home-screen
-2. **Daily runs** — seeded levels, shareable run codes, per-seed scoreboard
-3. **Achievements + run history** — best wave, kills, playtime
-4. **Accessibility** — colorblind-safe enemy outlines, reduced-motion toggle,
-   volume sliders, remappable keys
-5. **Difficulty modes** — Normal / Nightmare; endless mode past wave 10
-6. **Music layer** (moved here if not done in Phase 1/2)
-
----
-
-## Phase 4 — Stretch goals
-
-Only after Phases 0–3.
-
-1. **Procedural map generation** — tile-based rooms + connectors so runs vary
-2. **Local 2-player co-op** — second gamepad/keyboard set
-3. **Online leaderboards** — optional server-backed, no hard dependency
+```
+My2dGame/
+├── apps/
+│   ├── client/            # Vite + your engine (src/ from today, refactored)
+│   └── server/            # Colyseus rooms + Express REST
+├── packages/
+│   └── shared/            # pure logic, balance data, schemas, protocol
+├── tools/                 # sprite generators (kept, extended)
+└── tests/                 # moves into packages/shared
+```
 
 ---
 
-## Known issues / backlog
+## 4. Architecture
 
-- Missing `favicon.ico` (404 in console — harmless, easy win)
-- `barHealth` easing on enemy health bars is legacy-kept; consider removing
-- No audio mute/settings persistence beyond high score
-- No touch layout tuning beyond the default phone viewport
-- Vite HMR full-reloads during edits make long browser-test sessions flaky —
-  restart the dev server or use cache-busted URLs (`/?v=<timestamp>`) when
-  testing for a while
+### Data flow (the mental model)
 
-## Workflow notes
+```
+ [Client A]  input intents ──┐                    ┌── state patches ──► [Client A]
+ [Client B]  input intents ──┼──► Colyseus Room ──┼── state patches ──► [Client B]
+ [Bot C]     server-internal ┘    (30Hz tick)     └── state patches ──► [Client C]
+                                  │
+                                  ▼
+                     Colyseus Schema state (players, enemies,
+                     loot, projectiles, wave, scores)
+                                  │
+                                  ▼ (match end)
+                     Postgres: matches, match_players, rankings
+```
 
-- Run `npm run dev` for iteration, `npm test` before landing, `npm run build`
-  to verify production output
-- Every phase ends with a browser smoke test (Playwright): no console errors,
-  pause overlay verified via canvas brightness, mobile viewport checked
-- Commit per phase with conventional commits; push after each landing
+- **Client sends:** movement vector, attack pressed, dash requested,
+  upgrade choice, chat. Never positions, never damage.
+- **Server sends:** Colyseus schema patches (positions, health, states,
+  drops, wave info). Delta-compressed automatically.
+- **Client renders:** remote entities *interpolated* between past snapshots;
+  local player gets prediction in Phase 8.
+- **Bots** are just simulated players inside the room — no extra
+  infrastructure.
+
+### Sync plan
+
+| Topic | Decision |
+|---|---|
+| Server tick | 30Hz (matches your 60Hz logic by running 2 steps/tick initially; can drop to 20Hz for PvE later) |
+| State | Colyseus `Schema` mirroring your entity shapes: `players: MapSchema`, `enemies: ArraySchema`, plus wave/room meta |
+| Input | Coalesced intents sent at ~30Hz; server clamps movement speed so no "speed hacks" |
+| Remote players | 100ms interpolation buffer |
+| Local player | Direct authority echo at first; add prediction + reconciliation in Phase 8 |
+| Latency UX | Show ping in HUD; Colyseus has `room.ping()` |
+| Disconnects | Colyseus 0.17 automatic reconnection + `onDrop`/`onReconnect`; DC'd player's character becomes idle/safe, or a bot takes over (toggle) |
+| Interest management | Later: only sync enemies within ~2 screens of each player (Phase 10 perf) |
+
+### Anti-cheat (cheap and effective because you're authoritative)
+
+- Never trust client positions/damage/currency.
+- Rate-limit messages (`maxMessagesPerSecond` in Colyseus).
+- Server-side movement clamping (already implied by `PLAYER_SPEED`).
+- All XP/coins/ranks awarded by the server from the simulation it ran.
+
+---
+
+## 5. Data model (Postgres)
+
+```sql
+users            (id, username UNIQUE, password_hash, created_at)
+player_stats     (player_id FK, level, xp, coins, total_kills, total_wins,
+                  total_matches, playtime_seconds, best_score)
+friendships      (player_low FK, player_high FK, status, created_at)
+                  -- status: pending_from_low / friends / blocked
+matches          (id, mode, map_id, seed, started_at, ended_at, winner_id)
+match_players    (match_id FK, player_id FK, character_id, kills, deaths,
+                  score, rating_before, rating_after, rating_delta, is_bot)
+rankings         (player_id FK, mode, rating, peak_rating, tier, updated_at)
+player_characters(player_id FK, character_id, unlocked_at)
+player_skins     (player_id FK, skin_id, unlocked_at, equipped)
+player_perks     (player_id FK, perk_id, level)      -- persistent upgrades, PvE-only
+```
+
+Design notes:
+
+- **Friendship invariant:** always store the pair as `(low_id, high_id)` with
+  a `UNIQUE` constraint so duplicate requests are impossible.
+- **Perks vs PvP:** persistent upgrades apply to Co-op and Solo only. Ranked
+  PvP uses characters only. This is the rule that keeps ranks meaningful.
+- **Match seed** stored per match → replays and "same lobby, rematch"
+  become possible later.
+
+---
+
+## 6. Characters & design
+
+### Launch roster (4 characters, all built from your sprite tooling)
+
+| Character | Playstyle | Stats twist vs. today's hero |
+|---|---|---|
+| **Black Swordsman** (existing hero) | Balanced melee | Reference kit — exactly today's stats/upgrades |
+| **Shadow Stalker** | Fast hit-and-run | 40% more speed, 30% less HP, faster/stronger dash, shorter range |
+| **Hexer** | Ranged caster | Ranged bolt attack (reuse projectile rendering), mana bar replaces stamina-ish cooldown, fragile |
+| **Warden** | Tank/cleave | +50% HP, slower, bigger cleave arc, shield block facing (reuse warden enemy logic) |
+
+### Character design system
+
+- Each character = a **data file** (`character_id, name, description, stats
+  block, animations, palette`). New character = new data, not new code.
+- Your `tools/generate-sprites.js` already writes frames into
+  `spritesheet.json` + PNG. Extend it so each character gets its own sheet
+  section (idle/walk/attack/hurt/death — you already have these states).
+- **Skins** = palette swaps + tiny accessories (helm, cape, glow). Trivial in
+  your system since sprites are colored rects. Unlockable with coins.
+- Character select happens in the lobby (Phase 3 UI) and is shown to everyone
+  (big name tag + colored outline above each player).
+
+---
+
+## 7. Maps
+
+### Format evolution (current `LEVELS` in `src/logic/levelData.js`)
+
+```js
+{
+  id: "forest_ruins",          // stable id for DB
+  name: "Forest Ruins",
+  modes: ["pve", "solo"],      // which modes allow this map
+  cols: 32, rows: 20,
+  spawns: [{ x: 100, y: 100 }, ...],   // one per player slot (was: single spawn)
+  portal: { x: 1450, y: 850 },
+  palette: { ... },            // unchanged
+  tiles: [...],                // unchanged (still hand-authored strings)
+  obstacles: [...],            // trees/rocks/water — unchanged format
+  torches: [...]
+}
+```
+
+### Plan
+
+1. **Extend the format** (spawns array, `modes` tag) — PvE maps get 4 spawn
+   points so 4 players can start apart.
+2. **3 existing PvE maps** stay (Forest Ruins, Crypt, Highlands) — they
+   become your co-op content.
+3. **3 new PvP arenas:** symmetric layouts, no portal, no water-death
+   cheese, torches instead of darkness so fights read clearly (or "Eclipse"
+   arena where the light zone shrinks — fun twist for later).
+4. **Bots-aware spawns:** server picks spawns with minimum distance between
+   players.
+5. **Map editor (Phase 9):** optional — Tiled `.tmx` export or an in-browser
+   painter. Not needed to launch; hand-authored strings scale to ~15 maps.
+
+---
+
+## 8. The roadmap — 11 phases
+
+Estimates assume you're working solo, evenings/weekends. **Rule: every phase
+ends shippable and playable.** Never start a phase with broken work.
+
+---
+
+### Phase 0 — Foundations (≈ 1–2 weeks)
+
+*"Nothing visible changes, but everything gets easier."*
+
+- [ ] Create npm-workspaces monorepo: `apps/client`, `apps/server`,
+      `packages/shared`. Move `src/` into `apps/client/src`.
+- [ ] Move `src/logic/*` + `tests/*` into `packages/shared`. **All 11 vitest
+      suites must pass with zero logic changes.**
+- [ ] Introduce TypeScript: `tsconfig` for shared + server; new files in TS;
+      migrate existing files file-by-file as you touch them (no big-bang
+      rewrite).
+- [ ] **Delete the plaintext-password localStorage fallback** in `src/auth.js`
+      and the `darkFantasyUsers` path. Auth goes through the API only.
+- [ ] Add `npm run dev:all` (concurrently run client + server), keep `lint`,
+      `test`, `build` scripts working in CI (GitHub Actions).
+- [ ] Pick the server host now: **Railway** (easiest) or **Fly.io**. Empty
+      Node app deployed with a health check.
+
+**Definition of done:** `npm test` green, client still runs solo as before,
+server answers `/health` in production.
+
+**Why first:** moving logic is trivial today (it's pure!) and gets 10x
+harder once the sim becomes multiplayer. Security fix can't wait.
+
+---
+
+### Phase 1 — First multiplayer slice (≈ 2 weeks)
+
+*"Hello, multiplayer." — two browsers, one room, visible movement.*
+
+- [ ] Colyseus 0.17 server (`defineServer`, per the official quickstart).
+- [ ] `LobbyRoom`: players connect, see a room list (name, player count,
+      public/private), create/join rooms by name.
+- [ ] Minimal `GameRoom` state: `players: MapSchema` with `x, y, name,
+      color`. Server runs a 30Hz tick that just applies movement intents
+      (no collision yet).
+- [ ] Client: connect via Colyseus SDK, send `{moveX, moveY}` intents, render
+      *remote* players as simple colored boxes at interpolated positions.
+- [ ] Spawn bots: add a `bots: 2` option that fills the room with server-side
+      wanderers.
+- [ ] Move your existing camera code to a shared "follow the set of
+      players" view (center of mass) — first generalization of the single-player
+      camera.
+
+**Definition of done:** open two browser windows, both join the same room,
+see each other move; add a bot with a button; disconnect one player — the
+other keeps playing.
+
+**Why this shape:** the entire multiplayer stack (host, rooms, sync,
+interpolation, bots) exists in its final form. Everything after this phase
+is *content* on top.
+
+---
+
+### Phase 2 — Co-op survival, the real game (≈ 3–4 weeks)
+
+*Your game, together. This is the emotional milestone.*
+
+- [ ] Refactor `entities.js` into **two layers**:
+      - `shared/simulation`: world state (players[], enemies[], loot[],
+        projectiles[], wave, portal) + `step(world, inputs, dt)` — pure,
+        headless, runs on server. Reuses `collision.js`, `waves.js`,
+        `ai.js`, `spawn.js`, `loot.js`, `upgrades.js` as-is.
+      - `client/render`: drawing only (existing draw functions, particles,
+        shake, vignette, dash pixel-effect).
+- [ ] Server `GameRoom` runs the simulation at 30Hz with Colyseus `Schema`
+      state: positions/health/states per player, enemies array, wave info.
+- [ ] Co-op wave scaling: `waveEnemyList(wave, playerCount)` — +40% enemies
+      and +25% HP per extra player (keep it in `shared` with tests).
+- [ ] Shared progression: kills/score are per-player; **wave clears, portals,
+      and victory are shared**. Level-up choice is per-player and pauses
+      only that player (server sends a `levelup` prompt to that client only).
+- [ ] Player-to-player collision (soft shove, like the existing
+      `resolveEnemyOverlaps`).
+- [ ] **Bots in co-op:** fill empty slots with server-side allies that hunt
+      the nearest enemy and pick upgrades automatically (simple greedy rule).
+- [ ] Death handling: dead players spectate (watch teammates) until the room
+      ends; "last alive" +1 life revive if enabled.
+- [ ] Match end → results screen (scoreboard: kills, damage, deaths,
+      survived, XP earned) → write to Postgres (`matches`,
+      `match_players`).
+
+**Definition of done:** invite a friend (or add 3 bots), play through wave 5
+together, watch each other's dash trails and damage numbers, get a scoreboard.
+
+**Risks:** player-upgrade choice flow ("pause one player") is the fiddliest
+part; build it as a simple modal on top of the existing upgrade-card code.
+
+---
+
+### Phase 3 — Rooms & lobby UX (≈ 2 weeks)
+
+*Where "play with/against your friends" becomes a real product.*
+
+- [ ] Full lobby screen (replaces the title screen's START):
+      - **Create room** — name, mode (co-op/arena-later), map, player
+        slots, bots on/off + count, public or private.
+      - **Room browser** — public rooms with player counts + join button.
+      - **Join by code** — 6-char code for private rooms (share with
+        friends).
+      - **In-room lobby** — player slots, ready-up, host controls
+        (start, kick, add bots, change map), **room chat**.
+      - **Character select** — placeholder grid now, real data in Phase 5.
+- [ ] Host-migration: if the host leaves, promote another player.
+- [ ] Lobby state is itself a Colyseus room (`LobbyRoom` + metadata) — free
+      live room list, auto-refreshing.
+
+**Definition of done:** you can create a private room, text a friend the
+code, they join, chat, ready up, and the host launches co-op from Phase 2.
+
+---
+
+### Phase 4 — Real accounts & friends (≈ 2–3 weeks)
+
+*Identity + the social graph.*
+
+- [ ] Replace Vercel `api/` with Express routes on the game server:
+      `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`,
+      `GET /auth/me`, `POST /auth/refresh`. JWT in httpOnly cookie.
+- [ ] Move `players` / `player_stats` access from the old functions to the
+      new server (same Neon DB — no migration of data).
+- [ ] Colyseus `onAuth` validates the JWT; guests play with a temp name
+      (visible as "Guest·xxxx") until they log in.
+- [ ] Friends API: `POST /friends/request`, `POST /friends/accept`,
+      `DELETE /friends/:id`, `GET /friends` — backed by the `friendships`
+      table.
+- [ ] **Presence:** online status + current room via a tiny pub/sub (Colyseus
+      presence or a `presence` column touched on connect/disconnect).
+- [ ] **Invite to room:** from the friends list → sends a Colyseus
+      `invite` message → friend sees a toast → joins the room.
+- [ ] Friends list UI in the lobby with a friend's current room shown.
+
+**Definition of done:** register → log in → add a friend → invite them → you
+two are in a private co-op room together. Log out/in keeps everything.
+
+---
+
+### Phase 5 — Characters & cosmetics (≈ 2–3 weeks)
+
+*Choice and identity.*
+
+- [ ] Define the 4 characters as data (`packages/shared/characters.ts`) with
+      stats blocks that feed the simulation (server validates stats, not
+      client).
+- [ ] Extend `tools/generate-sprites.js` to emit per-character sheet
+      sections + `spritesheet.json` entries; add `preview-sprites` filtering
+      by character.
+- [ ] Character select screen (lobby + solo): preview sprite, stats bars,
+      description.
+- [ ] **Skins:** 2 palette skins per character at launch (e.g., "Ashen",
+      "Blood Moon"). Unlock flow stubbed with coins from Phase 6.
+- [ ] In-game player identity: name tag, colored outline, character
+      silhouette so everyone reads at a glance who is who.
+- [ ] Server-owned loadout: room stores `{characterId, skinId}` per player;
+      simulation reads stats from server data only.
+
+**Definition of done:** 4 playable characters in co-op with distinct
+feeling, 8 skins rendered by your generator, teammates clearly
+distinguishable in a 4-player match.
+
+---
+
+### Phase 6 — Progression & meta (≈ 2–3 weeks)
+
+*The "upgrades and ranks" the title promises.*
+
+- [ ] **Account progression:** XP + coins from every match (server-awarded
+      from `match_players`), account levels with cosmetic rewards at levels
+      5/10/25/50.
+- [ ] **Coin shop:** unlock characters, skins. Prices set so ~10 co-op
+      matches unlock a new character.
+- [ ] **Persistent perk tree** (PvE/Solo only — *not* ranked PvP):
+      e.g., +5% XP, +10 coins/match, +1 potion drop chance, starting +25 HP,
+      dash recharge -5% (stackable, capped). Buy with coins, applies as
+      server-side modifiers to the sim.
+- [ ] Loadout screen: perks + character + skin.
+- [ ] Daily quests (optional but sticky): "Slay 100 enemies", "Win a co-op
+      match", "Play 3 matches".
+- [ ] Backfill `player_stats` with new columns; keep old scores migrating.
+
+**Definition of done:** play 5 matches, level up twice, unlock a skin, equip
+a perk, see it change a co-op run (more potions, more XP), and verify it has
+*zero* effect in a ranked arena (Phase 7).
+
+---
+
+### Phase 7 — PvP arena + ranked (≈ 4 weeks)
+
+*"Against" your friends, with a ladder to prove it.*
+
+- [ ] **Arena mode:** 2–8 players, symmetric maps, respawn-on-death with
+      score + first-to-N-kills (or last-one-standing variant). Reuse the
+      player-vs-player shove from Phase 2 + new player-vs-player damage.
+- [ ] **Matchmaking queue:** Colyseus `QueueRoom` (built-in, 0.17) or your
+      own simple queue — casual (anyone) and ranked (nearby rating).
+- [ ] **Ranking:** Elo with K=32 per mode (simplest correct choice; upgrade
+      to Glicko-2 later if desired). Store `rating_before/after` per match.
+- [ ] **Tiers** (thematic): Iron → Bronze → Silver → Gold → Platinum →
+      Diamond → **Eclipse Lord**. Tier = rating bands; season resets with
+      3 placement matches.
+- [ ] Leaderboard: top 100 by rating (page + endpoint), your own name
+      highlighted.
+- [ ] **Ranked = normalized:** all characters available, no perks, no skins
+      advantage, no account-level bonuses. Skill only.
+- [ ] Results screen with rating delta (+15 ▼ -12 style) and tier progress.
+- [ ] Friend matches: private arena rooms with code (no rating change when
+      private).
+
+**Definition of done:** queue up, get matched near your rating, play a fair
+4v4-style deathmatch, see rating change, check your tier on a leaderboard.
+Private arena with friends doesn't touch your rating.
+
+---
+
+### Phase 8 — Network feel (≈ 2–3 weeks)
+
+*From "works" to "feels right".*
+
+- [ ] **Client-side prediction + reconciliation** for the local player in
+      PvP (store inputs, re-simulate locally, correct on server state).
+      This is the single biggest feel upgrade for fighting friends.
+- [ ] Interpolation buffer tuning per mode (PvE can be lazier than PvP).
+- [ ] Ping display in HUD + server-side `room.ping()`; warning icon above
+      200ms.
+- [ ] Reconnection polish: Colyseus `onDrop`/`onReconnect` — hold the seat,
+      restore state without re-downloading everything; after 30s a bot
+      takes over your character.
+- [ ] Hit-stop/shake/vignette stay client-local (already the case — just
+      verify they never touch simulation state).
+- [ ] Snapshot smoothing: damped health bars, enemy velocity smoothing.
+
+**Definition of done:** play a PvP match at ~80ms ping and your local
+movement feels identical to solo play; a teammate who lags doesn't teleport
+so hard.
+
+**Note:** this phase deliberately comes *after* the game is feature-complete
+— prediction is the hardest part of networking and you want a finished game
+to justify it.
+
+---
+
+### Phase 9 — Content & bots (≈ 3–4 weeks)
+
+*"Even better than I imagined" territory.*
+
+- [ ] **Bots with difficulty levels:** Bronze/Silver/Gold bots — parameterize
+      reaction time, attack frequency, decision noise, damage dealt (server
+      only). Co-op allies get smarter (help the weakest player, bait
+      exploders, guard the portal).
+- [ ] 3 new PvE maps (use your hand-authored tile strings — e.g., "Sunken
+      Chapel", "Blood Mire", "Highlands Citadel") + 2 new PvP arenas.
+- [ ] 2 new enemy types with new AI states (e.g., "Charger" — telegraphed
+      dash attack; "Vexer" — buffs nearby enemies; reuses your state-machine
+      pattern in `logic/ai.js`).
+- [ ] **New mode: Endless** (shared leaderboard for wave reached) — cheap to
+      add since waves already compose from data.
+- [ ] Map editor (optional): Tiled import or in-browser painter emitting the
+      same tile-string JSON.
+- [ ] Match history page (your own past matches + stats), replays via stored
+      `seed` + input logs if ambitious.
+
+**Definition of done:** a friend you invite to a Gold-bot co-op run asks
+"wait, that was a bot?"
+
+---
+
+### Phase 10 — Scale, polish & launch (ongoing)
+
+- [ ] Redis presence (Upstash) so rooms survive restarts and multiple server
+      instances can share the room list; Colyseus Redis driver.
+- [ ] Load test (e.g., 50 bots in rooms on one instance) to find the CCU
+      ceiling; horizontal scale only when needed.
+- [ ] Observability: logs (structured), error tracking (Sentry), simple
+      metrics (rooms, players, tick time).
+- [ ] Anti-cheat pass: rate limits, input validation, anomaly detection on
+      score/damage deltas, report button.
+- [ ] Mobile: touch controls already exist — verify 4-player matches on
+      phones; bigger buttons in lobby.
+- [ ] Performance: interest management (sync only nearby enemies), draw
+      culling, sprite batching if needed.
+- [ ] Community: Discord link, "copy room code" share button, seasonal
+      ranked badges, first tournament (friendly).
+
+---
+
+## 9. Cross-cutting decisions (read these before you start)
+
+1. **Server owns everything that matters.** Positions, damage, drops, XP,
+   coins, ratings. Clients are terminals. This makes cheats nearly
+   impossible and lets bots exist for free.
+2. **Progression never touches ranked PvP.** The moment coins buy damage in
+   ranked, the game dies. Perks = PvE. Ranks = skill.
+3. **Solo play stays first-class.** Every multiplayer feature (bots, codes,
+   characters) should also improve solo play, so you always have a
+   playable game.
+4. **Small network surface.** Inputs in, states out. No client-side
+   simulation of enemies in multiplayer — one source of truth.
+5. **Determinism where it matters.** Same seed → same waves/loot → fair
+   matches and future replays. Your pure functions already make this free.
+6. **Never trust the client's clock or wallet.** All timers and economy
+   server-side.
+
+---
+
+## 10. Common pitfalls to avoid
+
+| Pitfall | Countermeasure |
+|---|---|
+| Porting everything to a new engine | Keep the engine. It's good and it's yours. |
+| P2P / WebRTC instead of a server | NAT punching, desync, and free cheating — avoid for years. |
+| Adding prediction on day one | Phase 8, after the game exists. |
+| Multiplayer everywhere at once | Co-op first (forgiving), PvP second. |
+| Letting lag compensate by teleporting | Interpolation buffer + prediction; never "snap to latest". |
+| Monetization before fun | Not in this roadmap at all. |
+| Skipping tests "just this once" | The logic tests are your safety net through the refactor — keep them green every phase. |
+
+---
+
+## 11. First steps (this week)
+
+1. Phase 0 tasks 1–2 only: monorepo + move `src/logic` to
+   `packages/shared`. One evening, zero risk, everything still runs.
+2. Phase 0 task 4: delete the localStorage plaintext password path.
+3. Follow the Colyseus quickstart (`npm create colyseus-app@latest`) on
+   your own machine and get the "moving boxes" demo up in one afternoon —
+   it will make Phase 1 feel easy.
+
+You're not starting from zero. You have a working, tested game whose
+architecture was *accidentally* built for exactly this upgrade. The pure
+logic layer is the whole reason this roadmap is 11 phases and not a rewrite.
