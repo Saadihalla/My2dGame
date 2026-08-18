@@ -350,11 +350,6 @@ export function resetPlayer() {
     player.invuln = 0;
     player.dashTimer = 0;
     player.dashCooldown = 0;
-
-    elf.x = player.x + 14;
-    elf.y = player.y - 18;
-    elf.prevX = elf.x;
-    elf.prevY = elf.y;
 }
 
 function tryStartDash() {

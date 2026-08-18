@@ -65,8 +65,6 @@ import {
     enemies,
     spawnEnemy,
     updatePlayer,
-    updateElf,
-    drawElf,
     updateEnemies,
     updateLoot,
     updateProjectiles,
@@ -242,7 +240,6 @@ function update(dt: number) {
     }
 
     updatePlayer(dt);
-    updateElf(dt);
     updateEnemies(dt);
     updateLoot();
     updateProjectiles(dt);
@@ -330,7 +327,6 @@ function draw(alpha: number) {
     drawParticles();
     drawPlayer(gameTime, alpha);
     drawEnemies(gameTime, alpha);
-    drawElf(gameTime, alpha);
     drawProjectiles(gameTime);
     drawNumbers();
 
