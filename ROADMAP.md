@@ -205,6 +205,9 @@ skin, see it in the lobby and in-game.
 
 ## ⏳ Phase 7 — Content Expansion
 
+- [x] **Puck companion** — tiny friendly familiar that hovers by the player's
+      shoulder (bobbing, flapping wings, blue glow). Rescued from the friend's
+      experimental branch and cleaned of the placeholder redirect mess
 - [ ] 2 new characters (4 total: Berserker, Hexer, Stalker, Warden)
 - [ ] 3–4 new co-op maps + 3–4 arena maps in `levelData`
 - [ ] New enemy types + second boss + elite variants
