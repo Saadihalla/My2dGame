@@ -103,6 +103,14 @@ export function startGame() {
     window.location.href = "/placeholder.html";
 }
 
+// Debug/agent tooling: start a local run without the placeholder gate.
+// Used by window.__game.control.start() — real users keep the gate.
+export function startLocalGame() {
+    resetRun();
+    setGameState("playing");
+    setButtons([]);
+}
+
 export function restartGame() {
     startGame();
 }

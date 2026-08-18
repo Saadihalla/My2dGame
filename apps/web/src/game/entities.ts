@@ -273,6 +273,14 @@ export const enemies: Enemy[] = [];
 export const loot: LootItem[] = [];
 export const projectiles: Projectile[] = [];
 
+// Debug/agent tooling: when true, enemies keep their render state but
+// skip movement + AI (no damage, no attacks). Set via window.__game.
+export let debugFreezeEnemies = false;
+
+export function setDebugFreezeEnemies(on: boolean) {
+    debugFreezeEnemies = on;
+}
+
 export function spawnEnemy(type: string, x: number, y: number, hpScale: number) {
     const t = ENEMY_TYPES[type];
 
@@ -878,6 +886,12 @@ export function updateEnemies(dt: number) {
             if (e.deadTimer > 0) {
                 e.deadTimer -= dt;
             }
+            continue;
+        }
+
+        if (debugFreezeEnemies) {
+            e.prevX = e.x;
+            e.prevY = e.y;
             continue;
         }
 

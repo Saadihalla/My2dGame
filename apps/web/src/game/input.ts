@@ -23,6 +23,17 @@ function requestDash() {
     dashRequested = true;
 }
 
+// Debug/agent input synthesis uses this to trigger the same dash edge
+// the keyboard double-tap and dash button produce.
+export function triggerDash() {
+    requestDash();
+}
+
+// Debug/agent input synthesis: drive the held-attack flag directly.
+export function setAttacking(hold: boolean) {
+    attacking = hold;
+}
+
 export function clearDashRequest() {
     dashRequested = false;
 }

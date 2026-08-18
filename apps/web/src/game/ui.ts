@@ -35,6 +35,11 @@ export function setButtons(list: UIButton[]) {
     uiButtons = list;
 }
 
+// Debug/agent tooling: read the current canvas button set.
+export function getUiButtons(): UIButton[] {
+    return uiButtons;
+}
+
 export function makeButton(label: string, action: () => void, y: number, width?: number): UIButton {
     return {
         x: VIEW_WIDTH / 2 - (width || 200) / 2,

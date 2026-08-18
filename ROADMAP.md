@@ -280,6 +280,28 @@ skin, see it in the lobby and in-game.
 
 ---
 
+## 🛠 Agent tooling (developer surface)
+
+*Goal: AI agents (and humans) can observe, drive, and assert EVERYTHING in the game —
+no canvas black box.*
+
+- [x] **Layer 1 — Game debug API** (`window.__game`, dev builds or `?debug=1`):
+      `state()` snapshot (player/wave/enemies/net/settings), `control.*` mutations
+      (hp/xp/level/teleport/spawn/kill/wave/godMode/freeze/victory/gameOver/…),
+      `input.*` synthesis through the real input pipeline, `ui.buttons()` +
+      `clickButton`/`clickAt` for canvas buttons, `when()` waiter, `df:game` events.
+      `control.start()` bypasses the placeholder gate (real START stays gated).
+- [ ] **Layer 2 — Playwright MCP** wiring + docs (browser plumbing for agents:
+      navigation, React UI, multi-tab co-op, screenshots)
+- [ ] **Layer 3 — Game-server debug channel** (`GAME_DEBUG=1` gated HTTP `/debug/*`
+      + `__debug` room messages: spawn wave, set hp, spawn bots, force match end,
+      simulated input latency)
+- [ ] **Layer 4 — Repo tooling**: move the browser E2E harness into
+      `apps/web/e2e/` (Playwright devDep + `pnpm e2e:*` scripts), reusable
+      `tools/agent/` scenario helpers, full `DEVTOOLS.md` guide
+
+---
+
 ## Testing & verification habits
 
 - [x] Sim logic: vitest suites (pure functions stay pure — this is what makes the
