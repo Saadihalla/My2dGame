@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@dark-fantasy/sim": "workspace:*",
+    "colyseus.js": "^0.15.15",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

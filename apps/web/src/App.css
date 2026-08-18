@@ -597,3 +597,237 @@ canvas {
 .profile-logout:hover {
     background: rgba(120, 20, 20, 0.4);
 }
+
+/* ======================
+   ONLINE LOBBY (React overlay)
+   ====================== */
+
+.online-button {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 30;
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    color: #7ec8ff;
+    background: rgba(28, 28, 34, 0.92);
+    border: 1px solid #7ec8ff;
+    padding: 10px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.online-button:hover {
+    background: rgba(20, 60, 90, 0.95);
+}
+
+.lobby-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.78);
+}
+
+.lobby-panel {
+    width: min(480px, 92vw);
+    max-height: 84vh;
+    display: flex;
+    flex-direction: column;
+    background: #1c1c22;
+    border: 1px solid #7ec8ff;
+    padding: 22px 26px;
+    font-family: "Press Start 2P", monospace;
+    color: #e6e6e6;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+}
+
+.lobby-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(126, 200, 255, 0.35);
+    padding-bottom: 10px;
+}
+
+.lobby-header h2 {
+    font-size: 14px;
+    color: #7ec8ff;
+    margin: 0;
+}
+
+.lobby-close {
+    background: none;
+    border: none;
+    color: #9aa;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.lobby-close:hover {
+    color: #ff5a5a;
+}
+
+.lobby-error {
+    font-size: 8px;
+    color: #ff5a5a;
+    margin: 12px 0 0;
+}
+
+.lobby-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.lobby-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 8px;
+    color: #aaa;
+}
+
+.lobby-label input {
+    width: 100%;
+    padding: 10px;
+    background: #0d0d0d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: white;
+    font-family: "Press Start 2P", monospace;
+    font-size: 10px;
+}
+
+.lobby-label input:focus {
+    outline: none;
+    border-color: #7ec8ff;
+}
+
+.lobby-btn {
+    font-family: "Press Start 2P", monospace;
+    font-size: 9px;
+    color: #7ec8ff;
+    background: rgba(126, 200, 255, 0.12);
+    border: 1px solid #7ec8ff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.lobby-btn:hover:not(:disabled) {
+    background: rgba(126, 200, 255, 0.28);
+}
+
+.lobby-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.lobby-btn.primary {
+    background: rgba(126, 200, 255, 0.2);
+}
+
+.lobby-btn.small {
+    font-size: 8px;
+    padding: 8px 12px;
+}
+
+.lobby-hint {
+    font-size: 8px;
+    color: #888;
+    margin: 10px 0 0;
+    line-height: 1.6;
+}
+
+.lobby-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.lobby-code {
+    font-size: 14px;
+    color: #ffd75a;
+    letter-spacing: 2px;
+}
+
+.lobby-players {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.lobby-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #26262f;
+    border: 1px solid #3a3a44;
+    padding: 10px 12px;
+    font-size: 9px;
+}
+
+.lobby-player.ready {
+    border-color: #7dff8a;
+}
+
+.lobby-player-name {
+    color: #e6e6e6;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lobby-player-tag {
+    font-size: 7px;
+    color: #ffd75a;
+    border: 1px solid #ffd75a;
+    padding: 3px 6px;
+}
+
+.lobby-player-ready {
+    font-size: 7px;
+    color: #666;
+}
+
+.lobby-player.ready .lobby-player-ready {
+    color: #7dff8a;
+}
+
+.lobby-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.lobby-actions .lobby-btn {
+    flex: 1;
+}
+
+.lobby-starting {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 9px;
+    color: #ffd75a;
+}
+
+.lobby-inmatch {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 18px;
+    text-align: center;
+}

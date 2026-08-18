@@ -805,39 +805,43 @@ export function updateProjectiles(dt: number) {
 
 export function drawProjectiles(gameTime: number) {
     for (const p of projectiles) {
-        const pulse = 0.5 + 0.5 * Math.sin(gameTime * 14);
-
-        if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
-            const frameData = getAnimationFrame(Assets.spritesheetDef, "projectile", "idle", gameTime);
-
-            if (frameData) {
-                const frame = frameData.frame;
-                const anchor = frameData.anchor;
-
-                ctx.save();
-                ctx.imageSmoothingEnabled = false;
-                ctx.globalAlpha = 0.65 + pulse * 0.35;
-                ctx.drawImage(
-                    Assets.spritesheet,
-                    frame.x, frame.y, frame.w, frame.h,
-                    p.x - anchor.x, p.y - anchor.y, frame.w, frame.h
-                );
-                ctx.restore();
-                continue;
-            }
-        }
-
-        ctx.globalAlpha = 0.35 + pulse * 0.3;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
-
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+        drawProjectileEntity(p, gameTime);
     }
+}
+
+export function drawProjectileEntity(p: Projectile, gameTime: number) {
+    const pulse = 0.5 + 0.5 * Math.sin(gameTime * 14);
+
+    if (Assets.loaded && !Assets.fallbackMode && Assets.spritesheet) {
+        const frameData = getAnimationFrame(Assets.spritesheetDef, "projectile", "idle", gameTime);
+
+        if (frameData) {
+            const frame = frameData.frame;
+            const anchor = frameData.anchor;
+
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            ctx.globalAlpha = 0.65 + pulse * 0.35;
+            ctx.drawImage(
+                Assets.spritesheet,
+                frame.x, frame.y, frame.w, frame.h,
+                p.x - anchor.x, p.y - anchor.y, frame.w, frame.h
+            );
+            ctx.restore();
+            return;
+        }
+    }
+
+    ctx.globalAlpha = 0.35 + pulse * 0.3;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
 }
 
 // ======================
@@ -1666,70 +1670,93 @@ export function drawEnemies(gameTime: number, alpha: number) {
             continue;
         }
 
-        const x = e.x + (e.x - e.prevX) * alpha;
-        const y = e.y + (e.y - e.prevY) * alpha;
-
-        // Ground shadow under the enemy
-        ctx.fillStyle = "rgba(0, 0, 0, 0.30)";
-        ctx.fillRect(x + 3, y + e.height - 1, e.width - 6, 4);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
-        ctx.fillRect(x + 6, y + e.height + 2, e.width - 12, 2);
-
-        // Health bar
-
-        if (e.health < e.maxHealth || e.type === "boss") {
-            const bw = e.width;
-            const bh = 5;
-            const ratio = Math.max(0, e.barHealth / e.maxHealth);
-            const barColor = ratio > 0.5 ? "#7dff8a" : ratio > 0.25 ? "#ffd75a" : "#ff5a5a";
-
-            ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-            ctx.fillRect(x - 1, y - 13, bw + 2, bh + 2);
-
-            ctx.fillStyle = barColor;
-            ctx.fillRect(x, y - 12, bw * ratio, bh);
-
-            ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-            ctx.fillRect(x, y - 12, bw * ratio, 1);
-
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x - 0.5, y - 12.5, bw + 1, bh + 1);
-        }
-
-        ctx.save();
-
-        if (e.facing === "left") {
-            ctx.translate(x + e.width, 0);
-            ctx.scale(-1, 1);
-            ctx.translate(-x, 0);
-        }
-
-        // Windup telegraph
-
-        if (e.state === "windup") {
-            const pulse = 0.5 + 0.5 * Math.sin(gameTime * 20);
-
-            ctx.fillStyle = "rgba(255, 60, 60, " + (0.15 + pulse * 0.25).toFixed(3) + ")";
-            ctx.fillRect(x - 2, y - 2, e.width + 4, e.height + 4);
-
-            ctx.fillStyle = "#ff5555";
-            ctx.font = "bold 22px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("!", x + e.width / 2, y - 14);
-        }
-
-        drawEnemyBody(e);
-
-        // Hurt flash
-
-        if (e.flash > 0) {
-            ctx.fillStyle = "rgba(255, 255, 255, " + ((e.flash / 0.12) * 0.75).toFixed(3) + ")";
-            ctx.fillRect(x - 2, y - 2, e.width + 4, e.height + 4);
-        }
-
-        ctx.restore();
+        drawEnemyEntity(e, gameTime, alpha);
     }
+}
+
+// Renderable subset of an enemy used by both the local sim and the
+// online world renderer (server state mirrored by net/world).
+export interface EnemyRenderView {
+    type: string;
+    x: number;
+    y: number;
+    prevX: number;
+    prevY: number;
+    width: number;
+    height: number;
+    state: string;
+    facing: Direction;
+    flash: number;
+    barHealth: number;
+    maxHealth: number;
+    animState?: string;
+    animTime?: number;
+}
+
+export function drawEnemyEntity(e: EnemyRenderView, gameTime: number, alpha: number) {
+    const x = e.x + (e.x - e.prevX) * alpha;
+    const y = e.y + (e.y - e.prevY) * alpha;
+
+    // Ground shadow under the enemy
+    ctx.fillStyle = "rgba(0, 0, 0, 0.30)";
+    ctx.fillRect(x + 3, y + e.height - 1, e.width - 6, 4);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.fillRect(x + 6, y + e.height + 2, e.width - 12, 2);
+
+    // Health bar
+
+    if (e.barHealth < e.maxHealth || e.type === "boss") {
+        const bw = e.width;
+        const bh = 5;
+        const ratio = Math.max(0, e.barHealth / e.maxHealth);
+        const barColor = ratio > 0.5 ? "#7dff8a" : ratio > 0.25 ? "#ffd75a" : "#ff5a5a";
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(x - 1, y - 13, bw + 2, bh + 2);
+
+        ctx.fillStyle = barColor;
+        ctx.fillRect(x, y - 12, bw * ratio, bh);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.fillRect(x, y - 12, bw * ratio, 1);
+
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - 0.5, y - 12.5, bw + 1, bh + 1);
+    }
+
+    ctx.save();
+
+    if (e.facing === "left") {
+        ctx.translate(x + e.width, 0);
+        ctx.scale(-1, 1);
+        ctx.translate(-x, 0);
+    }
+
+    // Windup telegraph
+
+    if (e.state === "windup") {
+        const pulse = 0.5 + 0.5 * Math.sin(gameTime * 20);
+
+        ctx.fillStyle = "rgba(255, 60, 60, " + (0.15 + pulse * 0.25).toFixed(3) + ")";
+        ctx.fillRect(x - 2, y - 2, e.width + 4, e.height + 4);
+
+        ctx.fillStyle = "#ff5555";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("!", x + e.width / 2, y - 14);
+    }
+
+    drawEnemyBody(e as unknown as Enemy);
+
+    // Hurt flash
+
+    if (e.flash > 0) {
+        ctx.fillStyle = "rgba(255, 255, 255, " + ((e.flash / 0.12) * 0.75).toFixed(3) + ")";
+        ctx.fillRect(x - 2, y - 2, e.width + 4, e.height + 4);
+    }
+
+    ctx.restore();
 }
 
 // ======================

@@ -2,3 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
   - "services/*"
+
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+
+pnpm:
+  allowBuilds:
+    esbuild: true
+    msgpackr-extract: true

@@ -9,6 +9,7 @@ export * from "./types.js";
 export * from "./ai.js";
 export * from "./camera.js";
 export * from "./collision.js";
+export * from "./combat.js";
 export * from "./dash.js";
 export * from "./frames.js";
 export * from "./levelData.js";
