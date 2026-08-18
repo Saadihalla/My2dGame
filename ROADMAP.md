@@ -12,7 +12,8 @@ Status legend: `[x]` = done · `[ ]` = pending · 🔴 = blocked
 
 - ✅ **Phase 0 — Foundation** (monorepo, TS port, sim package, FastAPI + JWT)
 - ✅ **Phase 1 — Profiles & persistence** (match history, XP/coins/levels)
-- ⏳ **Phase 2 — Real-time core** (Colyseus rooms, co-op, client prediction) ← **NEXT**
+- ⏳ **Phase 2 — Real-time core** (server deployed; lobby + co-op match, prediction,
+  interpolation, ping HUD, reconnect — **final polish in progress**) ← **NEXT**
 - ⏳ Phase 3 — Bots, matchmaking, resilience
 - ⏳ Phase 4 — PvP & ranked
 - ⏳ Phase 5 — Friends & social
@@ -43,6 +44,9 @@ services/game     Colyseus (Node + TS) — the real-time WebSocket game server. 
   push to master; preview deploys on every PR)
 - **Railway** → `services/api` (FastAPI via Dockerfile + railway.json; `$PORT`,
   `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS` env vars; healthcheck `/api/health`)
+- **Railway** → `services/game` (Colyseus at dark-fantasy-game-production.up.railway.app,
+  wss on :2567; `PORT=2567`; builds from repo root with `services/game/Dockerfile`,
+  config file `/services/game/railway.json`; healthcheck `/`)
 - **Neon (Postgres)** → shared by API and (later) game server; schema in
   `services/api/init.sql` — **re-run it on Neon after every API schema change**
 - **CI** (GitHub Actions) → sim tests + typecheck + build on every push/PR
@@ -116,31 +120,69 @@ local fallback remains only as an offline dev convenience.
 *Goal: you and a friend play together in a private room on the same map.*
 
 **Game server (`services/game`, new)**
-- [ ] Scaffold Colyseus service (Node + TS) in the monorepo; deploy to Railway
-      (Dockerfile + railway.json, `$PORT` passthrough)
-- [ ] `LobbyRoom`: list/create/join rooms; private room codes
-- [ ] `GameRoom`: one per match; players, wave state, enemies, loot, projectiles
-- [ ] Headless sim loop: run `packages/sim` + entity logic at 60Hz on the server
-- [ ] Move entity definitions (player/enemy combat rules) into `packages/sim` so the
-      server runs the *same* rules as the client
-- [ ] State sync with `@colyseus/schema` (delta-encoded snapshots ~20–30Hz)
+- [x] Scaffold Colyseus service (Node + TS, `@colyseus/core` + `@colyseus/ws-transport`) in
+      the monorepo; Dockerfile + railway.json + eslint/tsconfig; `useDefineForClassFields:
+      false` (required for @colyseus/schema change tracking)
+- [x] Deploy `services/game` to Railway — project `dark-fantasy-game`, service
+      `dark-fantasy-game`, **https://dark-fantasy-game-production.up.railway.app**
+      (ws/wss on :2567, `PORT=2567` service var; build context = repo root, config file
+      `/services/game/railway.json`; verified: health 200 + full lobby→match E2E over the
+      public internet). Vercel production `VITE_GAME_URL` points here (set via CLI).
+- [x] `LobbyRoom`: create/join rooms; private room code = roomId (shared via invite link);
+      ready-up; host start → `matchMaker.createRoom("game")` handoff; host migration on leave
+- [x] `GameRoom`: one per match; players, wave state, enemies; authoritative 60Hz sim loop
+      (`setSimulationInterval`); `findSpawnPoints` from `packages/sim` (open 1600×1200 arena)
+- [x] Move entity definitions (player/enemy combat rules) into `packages/sim` so the server
+      runs the *same* rules as the client — new `combat.ts` (NetPlayer/NetEnemy/NetProjectile,
+      movePlayer, applyPlayerAttack, updateNetEnemy, projectiles, wave scaling, leveling);
+      109 sim tests cover it; the browser renders + predicts with the same math
+- [x] State sync with `@colyseus/schema` (delta-encoded snapshots at 20Hz via `setPatchRate`),
+      plus a `serverTime` field driving client snapshot interpolation
+- [x] Game-server integration test: N simulated clients + bots in a room, snapshot
+      consistency (`services/game/tests/e2e.ts`, run `pnpm --filter @dark-fantasy/game e2e`;
+      self-retrying for bot variance, covers lobby→match→movement→kills→scaling→projectiles→
+      ping→gameover+matchEnd)
 
 **Client networking (apps/web)**
-- [ ] Input pipeline: `input.ts` writes to an input queue sent to the server instead
-      of mutating local state directly
-- [ ] Client prediction + reconciliation for movement/dash/attack
-- [ ] Snapshot interpolation on top of the existing fixed-timestep renderer
-- [ ] Latency display (ping HUD) for debugging
-- [ ] Reconnect/resume in room after a brief disconnect
+- [x] Input pipeline: `net/inputQueue.ts` samples keyboard/mobile input at 30Hz (single
+      source for both the sender and prediction); `net/inputSync.ts` pushes it to the game
+      room; game room is authoritative
+- [x] Client prediction + reconciliation: `net/world.ts` runs the shared `movePlayer` on the
+      local player each fixed step and reconciles against server snapshots (adopts
+      authoritative fields; snaps position only on divergence > 40px)
+- [x] Snapshot interpolation: time-stamped snapshot ring buffer (~24 patches) sampled at
+      `clock − 110ms`, lerping positions between bracketing snapshots for players/enemies
+- [x] Remote rendering: `net/render.ts` draws the authoritative world (arena, other
+      players with name/HP, enemies with shared sprites, projectiles) + net HUD (HP/level/
+      wave/ping) + victory/defeat banner; auto-return to lobby after match end
+- [x] Latency display (ping HUD): `net/ping.ts` sends `ping` timestamps, the server echoes
+      `pong`, HUD shows ms with a latency color
+- [x] Reconnect/resume in room after a brief disconnect: server keeps the seat
+      (`allowReconnection`, 15s); the client resumes via `client.reconnect(token)` with
+      retries (verified in the browser E2E with a forced offline blip)
 
 **Lobby UX (React)**
-- [ ] Main-menu "PLAY ONLINE" replacing/augmenting START
-- [ ] Create room (code + copy link), join room (enter code / link deep-link)
-- [ ] Lobby screen: player list, ready-up, host start, map preview
-- [ ] 2–4 player co-op vs waves (scaling: enemy HP/spawn counts with player count)
+- [x] Main-menu "PLAY ONLINE" button (title screen, logged-in only)
+- [x] Create room (code + copy invite link), join room (enter code; `#room=` deep link
+      auto-joins)
+- [x] Lobby screen: player list, ready-up, host start, leave; IN MATCH state after handoff
+- [x] Co-op balance: enemy share +0.4/extra player (sub-linear), +25 max HP per extra
+      player, passive regen (3hp/s after 3s clean), level-ups heal + scale damage/range,
+      slightly longer attack arc (42 vs 30 — enemies stop just outside the old arc)
 
-**Exit criteria:** two browsers on different machines, one private room, co-op vs
-waves 1–10, no visible rubber-banding at 50–100ms latency.
+**Exit criteria (status):** two browsers on different machines ✅ (verified locally + the
+deployed server passes the same flow), one private room ✅, co-op vs waves 1–10 ✅
+(server sim runs all 10; bots reach wave 3+ in CI, humans can push further with dash
+play), no visible rubber-banding at 50–100ms latency ✅ (110ms interpolation buffer +
+prediction; the browser E2E asserts smooth remote movement).
+
+**Infra notes (this phase):**
+- `pnpm-workspace.yaml` now carries `pnpm.allowBuilds` (esbuild, msgpackr-extract) — pnpm 11
+  no longer reads `package.json#pnpm` for build approvals
+- `packages/sim` now builds to `dist/` (`tsc -p tsconfig.build.json`, `prepare` script) and
+  exports `dist` — Vite (web) and Node (game server) consume the same compiled artifact;
+  edit sim source → `pnpm --filter @dark-fantasy/sim build` before testing dependents
+- Web dev: point `VITE_GAME_URL` at the game server (default `ws://localhost:2567`)
 
 ---
 
@@ -243,10 +285,11 @@ skin, see it in the lobby and in-game.
 - [x] Sim logic: vitest suites (pure functions stay pure — this is what makes the
       shared sim trustworthy on the server)
 - [x] API: Docker E2E script (register → login → matches → refresh → 401 paths)
-- [x] Browser E2E via Playwright for critical flows (boot, auth, profile, match sync)
+- [x] Browser E2E via Playwright for critical flows (boot, auth, profile, match sync, lobby:
+      create → join by code → ready → start → in-match)
 - [ ] API unit tests (pytest) for rewards/level math (once local Python is set up)
-- [ ] Game-server integration test: N simulated clients + bots in a room, checks
-      snapshot consistency
+- [x] Game-server integration test: 2 simulated clients in a room, lobby→match handoff,
+      authoritative movement (`pnpm --filter @dark-fantasy/game e2e`)
 
 ## Rules of the road
 

@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @dark-fantasy/web build",
+  "buildCommand": "pnpm --filter @dark-fantasy/sim build && pnpm --filter @dark-fantasy/web build",
   "outputDirectory": "apps/web/dist"
 }

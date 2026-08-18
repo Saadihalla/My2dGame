@@ -27,6 +27,7 @@ import {
     stats,
     addScore,
     addGameTime,
+    setGameState,
     setWaveState,
     setWaveTimer,
     setPortalActive,
@@ -64,8 +65,6 @@ import {
     enemies,
     spawnEnemy,
     updatePlayer,
-    updateElf,
-    drawElf,
     updateEnemies,
     updateLoot,
     updateProjectiles,
@@ -78,6 +77,9 @@ import {
 } from "./entities";
 import { drawHUD, drawOverlays } from "./ui";
 import { drawText } from "./theme";
+import { netWorld, predictPlayer, renderTick } from "../net/world";
+import { drawNetWorld } from "../net/render";
+import { lastInput } from "../net/inputQueue";
 import {
     startGame,
     restartGame,
@@ -197,7 +199,27 @@ function updateWaves(dt: number) {
 // UPDATE
 // ======================
 
+// Tracks a net match ending so the canvas returns to the title screen.
+let wasNetActive = false;
+
 function update(dt: number) {
+    // Online mode: the server is authoritative. The client predicts the
+    // local player and renders the mirrored world; the local sim idles.
+    if (netWorld.active) {
+        wasNetActive = true;
+        addGameTime(dt);
+        predictPlayer(dt, lastInput());
+        if (gameState !== "playing") {
+            setGameState("playing");
+        }
+        return;
+    }
+
+    if (wasNetActive) {
+        wasNetActive = false;
+        goTitle();
+    }
+
     if (gameState !== "playing") {
         return;
     }
@@ -218,7 +240,6 @@ function update(dt: number) {
     }
 
     updatePlayer(dt);
-    updateElf(dt);
     updateEnemies(dt);
     updateLoot();
     updateProjectiles(dt);
@@ -276,6 +297,14 @@ function drawPortal(gameTime: number) {
 function draw(alpha: number) {
     ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 
+    // Online mode: render the authoritative world (arena, players,
+    // enemies, projectiles) with interpolation + net HUD.
+    if (netWorld.active) {
+        renderTick(lastFrameTime);
+        drawNetWorld(gameTime, alpha);
+        return;
+    }
+
     const camX = camera.x + (camera.x - camera.prevX) * alpha;
     const camY = camera.y + (camera.y - camera.prevY) * alpha;
 
@@ -298,7 +327,6 @@ function draw(alpha: number) {
     drawParticles();
     drawPlayer(gameTime, alpha);
     drawEnemies(gameTime, alpha);
-    drawElf(gameTime, alpha);
     drawProjectiles(gameTime);
     drawNumbers();
 
@@ -373,14 +401,17 @@ document.getElementById("refreshButton").addEventListener("click", function (eve
 
 let lastTime = performance.now();
 let accumulator = 0;
+let lastFrameTime = 0;
 
 function gameLoop(timestamp: number) {
     const frameTime = Math.min((timestamp - lastTime) / 1000, MAX_FRAME_TIME);
     lastTime = timestamp;
+    lastFrameTime = frameTime;
 
     pollGamepad();
 
-    if (gameState !== "playing") {
+    // Net mode keeps ticking regardless of the local state machine.
+    if (gameState !== "playing" && !netWorld.active) {
         accumulator = 0;
         draw(1);
         requestAnimationFrame(gameLoop);
