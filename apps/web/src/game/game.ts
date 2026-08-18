@@ -80,6 +80,7 @@ import { drawText } from "./theme";
 import { netWorld, predictPlayer, renderTick } from "../net/world";
 import { drawNetWorld } from "../net/render";
 import { lastInput } from "../net/inputQueue";
+import { initGameDebug } from "./debug";
 import {
     startGame,
     restartGame,
@@ -434,6 +435,7 @@ buildLevel(0);
 initAuthUI();
 restoreSession();
 goTitle();
+initGameDebug();
 
 // Kick off the asset pipeline; the game runs in procedural fallback until
 // the sheet loads (and validates). Progress is shown by the loading overlay.

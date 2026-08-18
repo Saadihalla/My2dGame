@@ -4,6 +4,27 @@ Multiplayer arena-survival game. Monorepo: React+TS game (`apps/web`), shared pu
 simulation (`packages/sim`), FastAPI backend (`services/api`), future Colyseus server
 (`services/game`, Phase 2).
 
+## Game debug surface (for agents)
+
+The canvas game is agent-drivable. In dev (`pnpm --filter @dark-fantasy/web dev`) or with
+`?debug=1` on any page, `window.__game` is attached to the browser:
+
+- `state()` — JSON snapshot: gameState, wave, stats, player (hp/level/xp/position),
+  enemies, settings, net world (ping, wave, players)
+- `control.*` — setHp/setMaxHp/heal/damage, setXp/setLevel/addXp, teleport, spawnEnemy,
+  killAllEnemies, setWave, godMode, freezeEnemies, victory/gameOver, start/restart/title,
+  pause/resume, advanceLevel, openUpgrades/chooseUpgrade, addLoot, volume/shake/motion
+- `input.*` — keyDown/keyUp/press, attack(hold), dash(), move(vx,vy), clear — drives the
+  SAME input pipeline as real input (prediction + net sender stay consistent)
+- `ui.buttons()` / `ui.clickButton(label)` / `ui.clickAt(x,y)` — canvas UI buttons
+  (START/ACCOUNT/SETTINGS/…), label + rect + click actions
+- `when(predicate, timeoutMs)` — await a state condition (returns boolean)
+- Events: `df:game` CustomEvent with a snapshot on every mutation/state change
+
+Note: `control.start()` starts a local run — the real START button is gated to
+`placeholder.html` by design. Online authority stays server-side; the debug API is
+client-only.
+
 ## Commands (run from repo root)
 
 - `pnpm --filter @dark-fantasy/sim test` — 91 unit tests on pure game logic
