@@ -291,15 +291,17 @@ no canvas black box.*
       `input.*` synthesis through the real input pipeline, `ui.buttons()` +
       `clickButton`/`clickAt` for canvas buttons, `when()` waiter, `df:game` events.
       `control.start()` bypasses the placeholder gate (real START stays gated).
-- [ ] **Layer 2 — Playwright MCP** wiring + docs (browser plumbing for agents:
-      navigation, React UI, multi-tab co-op, screenshots)
+- [x] **Layer 2 — Playwright MCP** wiring + docs (browser plumbing for agents:
+      navigation, React UI, multi-tab co-op, screenshots) — documented in
+      `DEVTOOLS.md`; MCP server config is per-agent (npx @playwright/mcp@latest,
+      `--vision` for canvas screenshots)
 - [x] **Layer 3 — Game-server debug channel** (`GAME_DEBUG=1` gated): HTTP `/debug/rooms`
       + `/debug/rooms/:roomId/:op` (wave/hp/bots/end/latency/freeze) and `__debug` room
       messages; server-side chase bots; simulated input latency; sim freeze. Verified by
       `pnpm --filter @dark-fantasy/game debug-e2e` (6 assertions). OFF in production.
-- [ ] **Layer 4 — Repo tooling**: move the browser E2E harness into
-      `apps/web/e2e/` (Playwright devDep + `pnpm e2e:*` scripts), reusable
-      `tools/agent/` scenario helpers, full `DEVTOOLS.md` guide
+- [x] **Layer 4 — Repo tooling**: browser E2E harness in `apps/web/e2e/` (Playwright
+      specs + helpers, `pnpm --filter @dark-fantasy/web e2e` auto-spawns both servers,
+      root `pnpm e2e` runs everything) + full `DEVTOOLS.md` guide
 
 ---
 
