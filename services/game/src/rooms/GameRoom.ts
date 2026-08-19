@@ -30,8 +30,17 @@ const WAVE_BREAK_TIME = 3;
 const WAVE_CLEAR_TIME = 2.5;
 const SPAWN_INSET = 200;
 
+// Debug surface gate: set GAME_DEBUG=1 to enable __debug room messages
+// and the HTTP /debug/* endpoints. OFF in production by default.
+const DEBUG_ENABLED = process.env.GAME_DEBUG === "1";
+
 interface JoinOptions {
     username?: string;
+}
+
+interface DebugOp {
+    op: string;
+    [key: string]: unknown;
 }
 
 interface PlayerStats {
@@ -63,6 +72,12 @@ export class GameRoom extends Room<GameState> {
     private waveTimer = WAVE_BREAK_TIME;
     private ended = false;
 
+    // Debug surface (GAME_DEBUG=1): simulated input latency and
+    // freeze-sim flag used by __debug ops + /debug HTTP endpoints.
+    private inputLatencyMs = 0;
+    private freezeSim = false;
+    private bots = new Map<string, { playerId: string; timer: ReturnType<typeof setInterval> }>();
+
     // Small co-op regen: after 3s without taking a hit the player
     // recovers 3hp/s. Keeps a group alive between waves without
     // removing the threat of being swarmed.
@@ -75,12 +90,17 @@ export class GameRoom extends Room<GameState> {
 
         this.onMessage("input", (client, input: NetInput) => {
             if (input && typeof input.vx === "number" && typeof input.vy === "number") {
-                this.inputs.set(client.sessionId, {
+                const validated: NetInput = {
                     vx: Math.max(-1, Math.min(1, input.vx)),
                     vy: Math.max(-1, Math.min(1, input.vy)),
                     dash: !!input.dash,
                     attack: !!input.attack
-                });
+                };
+                if (this.inputLatencyMs > 0) {
+                    setTimeout(() => this.inputs.set(client.sessionId, validated), this.inputLatencyMs);
+                } else {
+                    this.inputs.set(client.sessionId, validated);
+                }
             }
         });
 
@@ -89,8 +109,135 @@ export class GameRoom extends Room<GameState> {
             client.send("pong", timestamp);
         });
 
+        // Debug channel — only registered when GAME_DEBUG=1.
+        // Supports ops: wave / hp / bots / end / latency / freeze
+        if (DEBUG_ENABLED) {
+            this.onMessage("__debug", (_client, msg: DebugOp) => {
+                switch (msg.op) {
+                    case "wave":
+                        this.debugSpawnWave(Number(msg.n) || 1);
+                        break;
+                    case "hp":
+                        this.debugSetHp(String(msg.sessionId || ""), Number(msg.hp) || 0);
+                        break;
+                    case "bots":
+                        this.debugSpawnBots(Number(msg.count) || 1);
+                        break;
+                    case "end":
+                        this.debugEndMatch(msg.status === "victory" ? "victory" : "gameover");
+                        break;
+                    case "latency":
+                        this.debugSetLatency(Number(msg.ms) || 0);
+                        break;
+                    case "freeze":
+                        this.debugFreeze(!!msg.on);
+                        break;
+                }
+            });
+        }
+
         this.setSimulationInterval(dt => this.tick(dt / 1000), 16.6);
         this.setPatchRate(50);
+    }
+
+    // ---- Public debug methods (called by __debug handler + HTTP /debug endpoints) ----
+
+    debugSpawnWave(n: number): void {
+        this.wave = Math.max(1, n);
+        // Clear existing enemies before spawning the new wave.
+        this.enemies.clear();
+        this.spawnWave();
+    }
+
+    debugSetHp(sessionId: string, hp: number): void {
+        const player = this.players.get(sessionId);
+        if (player) {
+            player.hp = Math.max(0, Math.min(player.maxHp, hp));
+            if (player.hp <= 0) {
+                player.hp = 0;
+                player.alive = false;
+            } else {
+                player.alive = true;
+            }
+        }
+    }
+
+    debugSpawnBots(count: number): void {
+        for (let i = 0; i < count; i++) {
+            const botId = `bot_${Date.now()}_${i}`;
+            const bot = createNetPlayer(
+                botId,
+                `Bot_${i + 1}`,
+                WORLD_W / 2 + (Math.random() - 0.5) * 300,
+                WORLD_H / 2 + (Math.random() - 0.5) * 300,
+                coopMaxHp(this.players.size + 1)
+            );
+            this.players.set(botId, bot);
+            this.syncPlayer(botId);
+
+            // Chase bot AI: move toward the nearest enemy, dash to close in,
+            // retreat at low hp — mirrors the E2E test sweeper bot.
+            const timer = setInterval(() => {
+                if (this.ended) {
+                    return;
+                }
+                const b = this.players.get(botId);
+                if (!b || !b.alive) {
+                    return;
+                }
+                let nearest: NetEnemy | null = null;
+                let minDst = Infinity;
+                for (const e of this.enemies.values()) {
+                    if (e.hp <= 0) {
+                        continue;
+                    }
+                    const dst = Math.hypot(e.x - b.x, e.y - b.y);
+                    if (dst < minDst) {
+                        minDst = dst;
+                        nearest = e;
+                    }
+                }
+                if (!nearest) {
+                    return;
+                }
+                const dx = nearest.x - b.x;
+                const dy = nearest.y - b.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const retreating = b.hp < 50;
+                this.inputs.set(botId, {
+                    vx: retreating ? -dx / len : dx / len,
+                    vy: retreating ? -dy / len : dy / len,
+                    dash: (minDst < 160 || retreating) && b.dashCooldown <= 0,
+                    attack: true
+                });
+            }, 400);
+
+            this.bots.set(botId, { playerId: botId, timer });
+        }
+    }
+
+    debugEndMatch(status: "victory" | "gameover"): void {
+        this.endMatch(status);
+    }
+
+    debugSetLatency(ms: number): void {
+        this.inputLatencyMs = Math.max(0, ms);
+    }
+
+    debugFreeze(on: boolean): void {
+        this.freezeSim = on;
+    }
+
+    private clearBots() {
+        for (const { timer } of this.bots.values()) {
+            clearInterval(timer);
+        }
+        this.bots.clear();
+    }
+
+    onDispose() {
+        // Rooms auto-dispose when empty mid-match — bot timers must not leak.
+        this.clearBots();
     }
 
     onJoin(client: Client, options?: JoinOptions) {
@@ -159,6 +306,14 @@ export class GameRoom extends Room<GameState> {
                     }
                 }
             }
+        }
+
+        // ---- Wave / enemies / projectiles / end conditions ----
+        // When the sim is frozen (debug op) we skip these sections but keep
+        // player movement so agents can still teleport / inspect the state.
+        if (this.freezeSim) {
+            this.syncAll();
+            return;
         }
 
         // ---- Wave state machine ----
@@ -343,6 +498,9 @@ const living = Array.from(this.players.values()).filter(p => p.alive);
         }
         this.ended = true;
         this.state.status = status;
+
+        // Clear all debug bot timers so they don't leak after match end.
+        this.clearBots();
 
         const results: PlayerStats[] = Array.from(this.players.values()).map(p => ({
             sessionId: p.id,
