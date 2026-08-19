@@ -27,8 +27,11 @@ client-only.
 
 ## Commands (run from repo root)
 
-- `pnpm --filter @dark-fantasy/sim test` — 91 unit tests on pure game logic
+- `pnpm --filter @dark-fantasy/sim test` — 109 unit tests on pure game logic
 - `pnpm --filter @dark-fantasy/game e2e` — game-server integration test (lobby → match → input)
+- `pnpm --filter @dark-fantasy/game debug-e2e` — server debug-channel test (GAME_DEBUG=1)
+- `pnpm --filter @dark-fantasy/web e2e` — browser specs (auto-spawns game + dev servers)
+- `pnpm e2e` — all of the above
 - `pnpm --filter @dark-fantasy/game dev` / `start` — local Colyseus server on :2567
 - Deployed game server: `wss://dark-fantasy-game-production.up.railway.app` (Railway,
   service `dark-fantasy-game`, `PORT=2567`; rebuild/redeploy via `railway up` from repo
@@ -37,6 +40,9 @@ client-only.
 - `pnpm --filter @dark-fantasy/web dev` — local dev server (set `VITE_GAME_URL` to the
   game server; `packages/sim` builds via `prepare`, rebuild it after sim source edits)
 - API: Docker build + run against local Postgres for E2E (no local Python needed)
+
+For the full agent/dev driving manual (__game API, server debug channel, E2E), read
+`DEVTOOLS.md`.
 
 ## Rules (non-negotiable)
 

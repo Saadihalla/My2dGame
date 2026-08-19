@@ -7,6 +7,7 @@
     "dev": "pnpm --filter @dark-fantasy/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "e2e": "pnpm --filter @dark-fantasy/game e2e && pnpm --filter @dark-fantasy/game debug-e2e && pnpm --filter @dark-fantasy/web e2e",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
