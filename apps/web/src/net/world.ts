@@ -76,7 +76,16 @@ export interface ProjectileView {
 export interface MatchEndInfo {
     status: string;
     wave: number;
-    results: Array<{ sessionId: string; username: string; score: number; kills: number; wave: number; level: number }>;
+    results: Array<{
+        sessionId: string;
+        username: string;
+        score: number;
+        kills: number;
+        survived: number;
+        damageDealt: number;
+        wave: number;
+        level: number;
+    }>;
 }
 
 interface SnapshotPlayer {

@@ -15,6 +15,8 @@ import {
     type MatchEndInfo
 } from "./world";
 import { startPing, stopPing } from "./ping";
+import { getAccessToken } from "../game/auth";
+import { submitMatch } from "../api/matches";
 // inputSync is imported lazily inside bindGameRoom: it pulls in
 // game/input -> game/config which touches the canvas at module load,
 // and the net layer must load before React mounts it.
@@ -222,6 +224,7 @@ async function bindGameRoom(room: Room) {
 
     room.onMessage("matchEnd", (info: MatchEndInfo) => {
         ingestMatchEnd(info);
+        submitNetMatch(info);
         // Give the banner a moment to be read, then return to the lobby.
         window.setTimeout(() => {
             if (netWorld.ended && gameRoom === room) {
@@ -260,6 +263,30 @@ async function bindGameRoom(room: Room) {
             }
         }
     });
+}
+
+// Submits the authoritative match results to the profile API, mirroring
+// the solo run flow (submitMatch in flow.ts). The stats come from the
+// game server's matchEnd payload — not from client-generated numbers.
+function submitNetMatch(info: MatchEndInfo) {
+    if (!getAccessToken()) {
+        return;
+    }
+
+    const me = info.results.find(r => r.sessionId === netWorld.localId);
+    if (!me) {
+        return;
+    }
+
+    submitMatch({
+        mode: "coop",
+        score: me.score,
+        wave: info.wave,
+        kills: me.kills,
+        survived: me.survived,
+        damage_dealt: me.damageDealt,
+        result: info.status === "victory" ? "victory" : "defeat"
+    }).catch(() => {});
 }
 
 // Reconnects to the same game room using the reconnection token after
